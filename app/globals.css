@@ -1,0 +1,597 @@
+@import "tailwindcss";
+
+/* 1. 清理並強制覆蓋 Next.js 預設的變數，確保不論系統黑夜白天，一律都是純黑底 */
+:root {
+  --background: #000000 !important;
+  --foreground: #ffffff !important;
+}
+
+/* 2. 核心基礎設定 */
+* {
+    box-sizing: border-box;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000000 !important; /* 強制純黑 */
+    color: #ffffff;
+    font-family: "Microsoft JhengHei", sans-serif;
+}
+
+/* 3. 遊戲場景設定 (注意：刪除了原有的 display: none，改由 React 的狀態控制) */
+.scene {
+    width: 100vw;
+    height: 100vh;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    position: relative;
+    background-color: #000000;
+}
+
+/* 4. 各場景背景圖設定 */
+#scene-start { 
+    background-image: url('/assets/start_1.png'); 
+}
+#scene-intro { 
+    background-image: url('/assets/start_2.png'); 
+}
+#scene-main { 
+    background-image: url('/assets/home.png'); 
+}
+
+/* 5. 遊戲熱區與互動元素 */
+.hitbox, .item-hitbox {
+    position: absolute;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#hitbox-start, #hitbox-intro {
+    border-radius: 20px;
+}
+
+.item-hitbox {
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+}
+
+/* 懸停通用設定 */
+.hitbox:hover, 
+.item-hitbox:hover {
+    box-shadow: none !important;
+    filter: none !important;
+    transform: scale(1.03); 
+    z-index: 10;
+}
+
+/* 第一、二頁開始按鈕的橢圓漸層 */
+#hitbox-start:hover,
+#hitbox-intro:hover {
+    background: radial-gradient(
+        ellipse,
+        rgba(255, 215, 0, 0.45) 0%,   
+        rgba(255, 215, 0, 0.15) 45%, 
+        rgba(255, 215, 0, 0) 65%
+    ) !important;
+}
+
+/* 第三頁所有物件的圓形漸層 */
+.item-hitbox:hover {
+    background: radial-gradient(
+        circle, 
+        rgba(255, 225, 50, 0.8) 0%,   
+        rgba(255, 215, 0, 0.5) 35%,   
+        rgba(255, 215, 0, 0.15) 50%, 
+        rgba(255, 215, 0, 0) 60%
+    ) !important;
+}
+
+/* 定位：第一頁按鈕 */
+#hitbox-start {
+    top: 71%;    
+    left: 35%;   
+    width: 30%;  
+    height: 11%; 
+}
+
+/* 定位：第二頁按鈕 */
+#hitbox-intro {
+    top: 76%;
+    left: 45%;
+    width: 10%;
+    height: 7%;
+}
+
+/* 定位：第三頁物件 */
+.item-hitbox[data-id="compass"]   { top: 46%; left: 27.5%; width: 6.5%; }
+.item-hitbox[data-id="letter"]    { top: 60%; left: 17%; width: 11%; }
+.item-hitbox[data-id="diary"]     { top: 39%; left: 66.5%; width: 10%; }
+.item-hitbox[data-id="food"]      { top: 3%;  left: 61.5%; width: 12%; }
+.item-hitbox[data-id="lock"]      { top: 70%; left: 53.5%; width: 20%; }
+
+/* 關卡彈窗樣式 */
+#level-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+
+#level-content {
+    width: 80%; height: 80%; background: #1a1a1a;
+    border: 3px solid #b08d57; color: white; padding: 30px; overflow-y: auto;
+}
+
+#close-level-btn {
+    margin-top: 20px; padding: 10px 30px; font-size: 18px;
+    background: #b08d57; border: none; color: white; cursor: pointer;
+}
+
+/* ==========================================
+   1. 羅盤關卡
+   ========================================== */
+#compass-container {
+    width: 100vw;
+    height: 100vh;
+    background: #000 url('/assets/compass/Compass_bg.png') no-repeat center center/auto 100vh;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+#compass-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 1; 
+    pointer-events: none; 
+}
+
+#dialogbox {
+    position: absolute;
+    width: 800px; 
+    height: 800px; 
+    background: url('/assets/compass/StoryFrame.png') no-repeat center center/contain;
+    padding: 40px;
+    box-sizing: border-box;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#dialog_content {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 55%; 
+    color: #fff;
+    text-align: center;
+    z-index: 101; 
+}
+
+#dialog_content h2 {
+    font-size: 40px;
+    margin-bottom: 30px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+}
+
+#dialog_content p {
+    font-size: 25px;
+    line-height: 1.7;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+}
+
+#startbutton {
+    position: absolute;
+    top: 72%; 
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px; 
+    height: 45px; 
+    background: url('/assets/compass/startbutton.png') no-repeat center/contain;
+    border: none;
+    cursor: pointer;
+    text-indent: -9999px;
+    z-index: 102; 
+    transition: transform 0.2s;
+}
+
+#startbutton:hover { 
+    transform: translate(-50%, -50%) scale(1.05); 
+}
+
+#compass-wrapper {
+    position: relative;
+    width: 800px; 
+    height: 800px;
+    z-index: 10;
+}
+
+#compass-full {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 800px;  
+    height: 800px;
+    transform: translate(-50%, -50%);
+    background: url('/assets/compass/Compass.png') no-repeat center/contain;
+    z-index: 5;
+}
+
+.puzzle-piece {
+    position: absolute;
+    width: 400px; 
+    height: 400px;
+    cursor: grab;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+#npiece { background-image: url('/assets/compass/Compass1.png'); }
+#wpiece { background-image: url('/assets/compass/Compass2.png'); }
+#spiece { background-image: url('/assets/compass/Compass3.png'); }
+#epiece { background-image: url('/assets/compass/Compass4.png'); }
+
+#pointer {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 500px; height: 500px;
+    transform: translate(-50%, -50%) rotate(0deg);
+    background: url('/assets/pointer.png') no-repeat center/contain;
+    transform-origin: center center;
+    transition: transform 0.8s ease;
+    z-index: 20;
+    pointer-events: none;
+}
+
+#compass-back-btn {
+    position: absolute;
+    top: 30px;
+    left: 80px;
+    width: 65px; 
+    height: 65px; 
+    background: url('/assets/compass/backbutton.png') no-repeat center/contain;
+    border: none;
+    cursor: pointer;
+    background-color: transparent;
+    z-index: 150;
+    transition: transform 0.2s ease;
+}
+
+#compass-back-btn:hover {
+    transform: scale(1.1);
+}
+
+/* ==========================================
+   2. 鎖定環關卡
+   ========================================== */
+.lock-game {
+    width:100%;
+    height:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#000;
+}
+
+.lock-stage {
+    position:relative;
+    width:900px;
+    height:600px;
+    transform:scale(var(--scale));
+    transform-origin:center;
+}
+
+.lock-bg {
+    position:absolute;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+
+.lock-back-btn {
+    position:absolute;
+    top:30px;
+    left:50px;
+    width:65px;
+    cursor:pointer;
+}
+
+.lock-text {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    width:65%;
+}
+
+.lock-desc {
+    position:absolute;
+    top:45%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    width:55%;
+    color:white;
+    text-align:center;
+}
+
+.lock-desc h2 {
+    margin-bottom:30px;
+    font-size:24px;
+}
+
+.lock-desc p {
+    font-size:16px;
+    line-height:1.7;
+}
+
+.lock-start-btn {
+    position:absolute;
+    top:69%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    width:120px;
+    cursor:pointer;
+}
+
+.lock-disc {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    width:510px;
+    height:510px;
+}
+
+.lock-layer {
+    position:absolute;
+    top:50%;
+    left:50%;
+}
+
+.lock-layer img {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    pointer-events:none;
+    transition:0.25s;
+}
+
+.lock-hit {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    border-radius:50%;
+    cursor:pointer;
+}
+
+.size420 img, .size420 .lock-hit { width:420px; height:420px; }
+.size320 img, .size320 .lock-hit { width:320px; height:320px; }
+.size220 img, .size220 .lock-hit { width:220px; height:220px; }
+
+.lock-full {
+    position:absolute;
+    width:100%;
+    height:100%;
+}
+
+.lock-center {
+    position:absolute;
+    width:125px;
+    height:125px;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+}
+
+.lock-end-modal {
+    position:absolute;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:200;
+}
+
+.lock-end-wrapper {
+    position:relative;
+    width:900px;
+    height:600px;
+    transform:scale(var(--scale));
+    transform-origin:center;
+}
+
+.lock-end-bg {
+    position:absolute;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+
+.lock-end-text {
+    position:absolute;
+    top:70%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    width:75%;
+    pointer-events:none;
+}
+
+.lock-end-desc {
+    position:absolute;
+    top:70%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    width:65%;
+    color:#fff;
+    text-align:left;
+    line-height:1.6;
+    font-size:16px;
+}
+
+.lock-end-btn {
+    position:absolute;
+    bottom:18%;
+    right:17%;
+    width:100px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+/* ==========================================
+   3. 最終關卡：歸途的方向
+   ========================================== */
+#direction-container {
+    width: 100vw;
+    height: 100vh;
+    background: #000 url('/assets/end/end_bg.png') no-repeat center center / cover !important;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+#direction-container::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 1;
+    pointer-events: none;
+}
+
+#dir-game-stage {
+    position: relative;
+    width: 800px; 
+    height: 800px;
+    z-index: 10;
+}
+
+#direction-container #dialogbox {
+    position: absolute;
+    width: 800px; 
+    height: 800px; 
+    background: url('/assets/compass/StoryFrame.png') no-repeat center center/contain;
+    padding: 40px;
+    box-sizing: border-box;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#direction-container #dialog_content h2 {
+    font-size: 40px;
+    margin-bottom: 30px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+}
+
+#direction-container #dialog_content p {
+    font-size: 23px;
+    line-height: 1.7;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+}
+
+#dir-center-compass {
+    position: absolute;
+    top: 57%; left: 50%;
+    width: 250px; height: 250px;
+    background: url('/assets/compass/Compass.png') no-repeat center/contain;
+    transform: translate(-50%, -50%) rotate(180deg);
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0.9;
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+}
+
+.dir-arrow {
+    position: absolute;
+    width: 70px;  
+    height: 70px;
+    border: none;
+    cursor: pointer;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    z-index: 10;
+    transition: transform 0.15s;
+}
+.dir-arrow:hover { transform: scale(1.1); }
+.dir-arrow:active { transform: scale(0.95); }
+
+.btn-up {    top: 25%;    left: 50%;  margin-left: -35px; background-image: url('/assets/end/up.png'); }
+.btn-down {  bottom: 7%; left: 50%;  margin-left: -35px; background-image: url('/assets/end/down.png'); }
+.btn-left {  top: 60%;    left: 15%;  margin-top: -35px;  background-image: url('/assets/end/left.png'); }
+.btn-right { top: 60%;    right: 15%; margin-top: -35px;  background-image: url('/assets/end/right.png'); }
+
+#clue-toggle-btn {
+    position: absolute;
+    top: 30px; 
+    right: 40px;
+    border: none;
+    background: transparent url('/assets/end/clues_button.png') no-repeat center / contain;
+    width: 140px;  
+    height: 45px;  
+    z-index: 50;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+#clue-toggle-btn:hover { transform: scale(1.05); }
+
+#clue-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+}
+
+.clue-modal-box {
+    background: #1b2b3a;
+    padding: 30px 50px;
+    border: 2px solid #d8a85f;
+    border-radius: 12px;
+    color: white;
+    text-align: center;
+    min-width: 300px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+.clue-modal-box p { font-size: 18px; margin: 12px 0; }
+.clue-modal-box hr { border: 0; border-top: 1px solid rgba(216,168,95,0.3); }
+
+#clue-close-btn {
+    margin-top: 15px; padding: 6px 25px;
+    background: #d8a85f; border: none; color: #000;
+    font-weight: bold; border-radius: 4px; cursor: pointer;
+}
+
+@keyframes arrowShake {
+    0% { transform: scale(1) translateX(0); }
+    20% { transform: scale(1) translateX(-8px); }
+    40% { transform: scale(1) translateX(6px); }
+    60% { transform: scale(1) translateX(-4px); }
+    80% { transform: scale(1) translateX(3px); }
+    100% { transform: scale(1) translateX(0); }
+}
+.shake-error { animation: arrowShake 0.3s ease-in-out !important; }
