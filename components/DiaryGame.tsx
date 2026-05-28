@@ -7,70 +7,54 @@ interface DiaryGameProps {
   onSuccess: (completed?: boolean) => void;
 }
 
-interface DraggableItemProps {
-  id: string;
-  src: string;
-  alt: string;
-  className?: string;
-}
-
-interface DroppableHitboxProps {
-  id: string;
-  className?: string;
-}
-
-function DraggableItem({ id, src, alt, className }: DraggableItemProps) {
+function DraggableItem({ id, src, alt, style }: {
+  id: string; src: string; alt: string; style?: React.CSSProperties;
+}) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id });
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
-    : undefined;
-
   return (
     <img
       ref={setNodeRef}
-      style={style}
+      style={{
+        touchAction: 'none',
+        cursor: 'grab',
+        userSelect: 'none',
+        transition: 'transform 0.1s',
+        ...style,
+        ...(transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50, position: 'relative' } : {}),
+      }}
       {...listeners}
       {...attributes}
       src={src}
       alt={alt}
-      width={400}
-      height={289}
-      className={`${className ?? ''} cursor-grab active:cursor-grabbing hover:scale-105 transition-transform touch-none`}
     />
   );
 }
 
-function DroppableHitbox({ id, className }: DroppableHitboxProps) {
-  const { isOver, setNodeRef } = useDroppable({ id });
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ backgroundColor: isOver ? 'rgba(255, 255, 255, 0.4)' : 'transparent' }}
-      className={`absolute z-20 rounded-md border-2 border-dashed border-white/50 transition-colors ${className ?? ''}`}
-    />
-  );
+function DroppableHitbox({ id, style }: { id: string; style?: React.CSSProperties }) {
+  const { setNodeRef } = useDroppable({ id });
+  return <div ref={setNodeRef} style={{ position: 'absolute', zIndex: 20, ...style }} />;
 }
 
 const PIECES = [
-  { id: 'dairy01', src: '/dairy01.png' },
-  { id: 'dairy02', src: '/dairy02.png' },
-  { id: 'dairy03', src: '/dairy03.png' },
+  { id: 'diary01', src: '/assets/diary/diary01.png' },
+  { id: 'diary02', src: '/assets/diary/diary02.png' },
+  { id: 'diary03', src: '/assets/diary/diary03.png' },
 ];
 
-const DIALOG = {
-  title: '迷航日誌',
-  p1: '航海日誌部分頁面被撕毀。',
-  p2: '也許某幾頁記錄了關鍵的資訊……',
-  p3: '試著把撕毀的頁面拼湊看看。',
-  p4: '桌上散落著被撕毀的紙頁，將紙拼回去即可找到線索。',
-  btn: '開始',
+const CONTAINER: React.CSSProperties = {
+  width: '100vw',
+  height: '100vh',
+  backgroundColor: '#000',
+  backgroundImage: `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url('/assets/diary/4.png')`,
+  backgroundSize: 'cover, auto 100vh',
+  backgroundPosition: 'center, center',
+  backgroundRepeat: 'no-repeat, no-repeat',
+  position: 'relative',
+  overflow: 'hidden',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
 };
-
-const BG = "min-h-screen w-full bg-[url('/4.png')] bg-cover bg-center bg-no-repeat overflow-hidden";
-const OVERLAY = 'relative flex min-h-screen w-full items-center justify-center bg-black/45 px-4 py-6';
-const CARD = 'max-w-md w-full rounded-2xl bg-black/70 border border-white/20 p-8 text-white text-center space-y-4';
-const BTN = 'mt-4 rounded-lg bg-white/10 border border-white/30 px-6 py-2 text-white hover:bg-white/20 transition-colors';
-const BACK_BTN = 'absolute top-4 left-4 z-30 text-sm text-white/60 hover:text-white transition-colors';
 
 export default function DiaryGame({ onSuccess }: DiaryGameProps) {
   const [isMounted, setIsMounted] = useState(false);
@@ -86,27 +70,25 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over?.id === `target-${active.id}` && !droppedItems.includes(String(active.id))) {
-      setDroppedItems((prev) => [...prev, String(active.id)]);
+      setDroppedItems(prev => [...prev, String(active.id)]);
     }
   };
 
-  if (!isMounted) return <div className={BG}><div className={OVERLAY} /></div>;
+  if (!isMounted) return <div style={CONTAINER} />;
 
   if (gameState === 'intro') {
     return (
-      <div className={BG}>
-        <div className={OVERLAY}>
-          <div className={CARD}>
-            <button className="absolute top-4 left-4 text-sm text-white/60 hover:text-white transition-colors" onClick={() => onSuccess(false)}>
-              ← 返回
-            </button>
-            <h2 className="text-2xl font-bold tracking-widest">{DIALOG.title}</h2>
-            <p className="text-white/80">{DIALOG.p1}</p>
-            <p className="text-white/80">{DIALOG.p2}</p>
-            <p className="text-white/80">{DIALOG.p3}</p>
-            <p className="text-white/60 text-sm">{DIALOG.p4}</p>
-            <button className={BTN} onClick={() => setGameState('playing')}>{DIALOG.btn}</button>
+      <div style={CONTAINER}>
+          <button id="compass-back-btn" onClick={() => onSuccess(false)} title="返回船艙" />
+        <div id="dialogbox" style={{ display: 'flex' }}>
+          <div id="dialog_content">
+            <h2>迷航日誌</h2>
+            <p>航海日誌部分頁面被撕毀。</p>
+            <p>也許某幾頁記錄了關鍵的資訊……</p>
+            <p>試著把撕毀的頁面拼湊看看。</p>
+            <p>桌上散落著被撕毀的紙頁，將紙拼回去即可找到線索。</p>
           </div>
+          <button id="startbutton" onClick={() => setGameState('playing')} />
         </div>
       </div>
     );
@@ -114,12 +96,67 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
 
   if (gameState === 'win') {
     return (
-      <div className={BG}>
-        <div className={OVERLAY}>
-          <div className={CARD}>
-            <h2 className="text-2xl font-bold tracking-widest">日誌還原完成</h2>
-            <p className="text-white/80">你成功拼湊了撕毀的頁面，找到了關鍵線索。</p>
-            <button className={BTN} onClick={() => onSuccess(true)}>返回船艙</button>
+      <div style={CONTAINER}>
+          <img
+          src="/assets/diary/diaryAll.png"
+          alt="完整日誌"
+          style={{
+            position: 'absolute',
+            top: '4%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '46%',
+            maxWidth: '560px',
+            maxHeight: '58vh',
+            objectFit: 'contain',
+            userSelect: 'none',
+            zIndex: 2,
+          }}
+        />
+        <div style={{
+          position: 'absolute',
+          bottom: '3%',
+          left: '15%',
+          right: '15%',
+          maxHeight: '32vh',
+          overflow: 'hidden',
+          backgroundImage: "url('/assets/compass/StoryFrame.png')",
+          backgroundSize: '100% 100%',
+          backgroundRepeat: 'no-repeat',
+          padding: '2% 5%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          zIndex: 3,
+        }}>
+          <p style={{
+            color: '#fff',
+            fontSize: 'clamp(13px, 1.6vw, 18px)',
+            lineHeight: 1.75,
+            margin: 0,
+            textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
+          }}>
+            翻開日誌，你看到前人的筆跡中隱隱透露恐懼與執念：<br />
+            「我聽見風的低語...黃金的光芒吸引著我們，也迷惑著我們。」<br />
+            你忽然明白，這些人並非貪財，而是被海域與詛咒的力量牽引。
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+            <p style={{
+              color: '#fff',
+              fontSize: 'clamp(13px, 1.8vw, 18px)',
+              margin: 0,
+              textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
+            }}>
+              得到線索：順序「北 → 西 → 東」
+            </p>
+            <img
+              src="/assets/LockEndConBtn.png"
+              alt="確定"
+              style={{ width: 'clamp(80px, 8vw, 110px)', cursor: 'pointer', transition: 'transform 0.2s', marginLeft: 'auto' }}
+              onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.08)')}
+              onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+              onClick={() => onSuccess(true)}
+            />
           </div>
         </div>
       </div>
@@ -127,49 +164,91 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
   }
 
   return (
-    <div className={BG}>
+    <div style={CONTAINER}>
+      <button id="compass-back-btn" onClick={() => onSuccess(false)} title="返回船艙" />
       <DndContext collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
-        <div className={OVERLAY}>
-          <button className={BACK_BTN} onClick={() => onSuccess(false)}>← 返回</button>
-          <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-center gap-4 lg:flex-row lg:items-center lg:gap-6">
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '2rem',
+          width: '95vw',
+          maxWidth: '1400px',
+        }}>
 
-            {/* 左側：dairy01 */}
-            <div className="flex w-full min-h-[200px] max-w-[340px] items-center justify-center sm:max-w-[380px] lg:max-w-[340px]">
-              {!droppedItems.includes('dairy01') && (
-                <DraggableItem id="dairy01" src="/dairy01.png" alt="dairy01" className="h-auto w-full max-w-[340px] shrink-0 object-contain" />
-              )}
-            </div>
-
-            {/* 中間：目標區域 */}
-            <div className="relative flex w-full max-w-[340px] shrink-0 items-center justify-center sm:max-w-[380px] lg:max-w-[340px]">
-              <img src="/dairy.png" alt="dairy base" width={400} height={289} className="h-auto w-full object-contain" />
-              {/* 開發用感應框，位置確認後可移除 border-2 border-dashed border-white/50 */}
-              <DroppableHitbox id="target-dairy01" className="bottom-[16%] left-[24%] w-12 h-12 sm:w-16 sm:h-16" />
-              <DroppableHitbox id="target-dairy02" className="top-[24%] right-[24%] w-12 h-12 sm:w-16 sm:h-16" />
-              <DroppableHitbox id="target-dairy03" className="top-[16%] left-[24%] w-12 h-12 sm:w-16 sm:h-16" />
-              {PIECES.map((piece) =>
-                droppedItems.includes(piece.id) ? (
-                  <img
-                    key={piece.id}
-                    src={piece.src}
-                    alt={piece.id}
-                    className="absolute inset-0 h-auto w-full object-contain pointer-events-none z-10"
-                  />
-                ) : null
-              )}
-            </div>
-
-            {/* 右側：dairy02 & dairy03 */}
-            <div className="flex w-full min-h-[400px] max-w-[340px] flex-col items-center justify-center gap-4 sm:max-w-[380px] lg:max-w-[340px]">
-              {!droppedItems.includes('dairy02') && (
-                <DraggableItem id="dairy02" src="/dairy02.png" alt="dairy02" className="h-auto w-full max-w-[340px] shrink-0 object-contain" />
-              )}
-              {!droppedItems.includes('dairy03') && (
-                <DraggableItem id="dairy03" src="/dairy03.png" alt="dairy03" className="h-auto w-full max-w-[340px] shrink-0 object-contain" />
-              )}
-            </div>
-
+          {/* 左側：diary01 */}
+          <div style={{ width: '440px', flexShrink: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            {!droppedItems.includes('diary01') ? (
+              <DraggableItem
+                id="diary01"
+                src="/assets/diary/diary01.png"
+                alt="diary piece 1"
+                style={{ width: '100%', height: 'auto' }}
+              />
+            ) : <div />}
           </div>
+
+          {/* 中間：日誌底圖 + 放置區 */}
+          <div style={{ width: '440px', flexShrink: 0, position: 'relative' }}>
+            <img
+              src="/assets/diary/diary.png"
+              alt="diary"
+              style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}
+            />
+            {/* 放置區覆蓋整張底圖，各佔一個象限 */}
+            <DroppableHitbox id="target-diary01" style={{ top: '0%', left: '0%', width: '50%', height: '50%' }} />
+            <DroppableHitbox id="target-diary02" style={{ top: '0%', right: '0%', width: '50%', height: '50%' }} />
+            <DroppableHitbox id="target-diary03" style={{ bottom: '0%', left: '0%', width: '50%', height: '50%' }} />
+            {PIECES.map(piece =>
+              droppedItems.includes(piece.id) ? (
+                <img
+                  key={piece.id}
+                  src={piece.src}
+                  alt={piece.id}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'fill',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                  }}
+                />
+              ) : null
+            )}
+          </div>
+
+          {/* 右側：diary02 + diary03 */}
+          <div style={{
+            width: '440px',
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            {!droppedItems.includes('diary02') && (
+              <DraggableItem
+                id="diary02"
+                src="/assets/diary/diary02.png"
+                alt="diary piece 2"
+                style={{ width: '100%', height: 'auto' }}
+              />
+            )}
+            {!droppedItems.includes('diary03') && (
+              <DraggableItem
+                id="diary03"
+                src="/assets/diary/diary03.png"
+                alt="diary piece 3"
+                style={{ width: '100%', height: 'auto' }}
+              />
+            )}
+          </div>
+
         </div>
       </DndContext>
     </div>
