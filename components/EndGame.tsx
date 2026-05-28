@@ -50,10 +50,10 @@ export default function EndGame({ onSuccess }: EndGameProps) {
 
       <div id="dir-center-compass"></div>
 
-      <button class="dir-arrow btn-up" data-dir="N"></button>
-      <button class="dir-arrow btn-left" data-dir="W"></button>
-      <button class="dir-arrow btn-right" data-dir="E"></button>
-      <button class="dir-arrow btn-down" data-dir="S"></button>
+      <button class="dir-arrow btn-up" data-dir="S"></button>
+      <button class="dir-arrow btn-left" data-dir="E"></button>
+      <button class="dir-arrow btn-right" data-dir="W"></button>
+      <button class="dir-arrow btn-down" data-dir="N"></button>
 
       <div id="clue-modal" style="display: none;">
         <div class="clue-modal-box">
