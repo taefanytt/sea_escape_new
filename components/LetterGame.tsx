@@ -80,8 +80,8 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
           }
 
           #hotspot-back {
-              top: 4%; left: 3%;
-              width: 10%; height: 12%;
+              top: 0%; left: 10%;
+              width: 15%; height: 15%;
               z-index: 30;
           }
 
