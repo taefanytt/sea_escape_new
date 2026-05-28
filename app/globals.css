@@ -170,6 +170,16 @@ body, html {
     align-items: center;
 }
 
+#dialogbox.compass-clue-dialogbox {
+    width: 820px;
+    height: 240px;
+    background: url('/assets/LockEndTextArea.png') no-repeat center center/contain;
+}
+
+#dialogbox.compass-clue-dialogbox #dialog_content p {
+    font-size: 25px;
+}
+
 #dialog_content {
     position: absolute;
     top: 45%;
@@ -210,6 +220,14 @@ body, html {
 
 #startbutton:hover { 
     transform: translate(-50%, -50%) scale(1.05); 
+}
+
+#startbutton.compass-clue-confirm-btn {
+    top: 83%;
+    left: 50%;
+    width: 100px;
+    height: 52px;
+    background: url('/assets/LockEndConBtn.png') no-repeat center/contain;
 }
 
 #compass-wrapper {

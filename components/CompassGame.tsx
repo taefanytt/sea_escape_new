@@ -216,9 +216,9 @@ export default function CompassGame({ onSuccess }: CompassGameProps) {
 
         setTimeout(() => {
           setDialogText({
-            title: "羅盤的指針停留在西方——",
-            p1: "得到線索：「向西轉三次」",
-            p2: "",
+            title: "",
+            p1: "羅盤的指針停留在西方——",
+            p2: "得到線索：「向西轉三次」",
             btn: "確定"
           });
           setDialogVisible(true);
@@ -258,13 +258,46 @@ export default function CompassGame({ onSuccess }: CompassGameProps) {
 
       {/* 對話框：利用 React 狀態控制顯示或隱藏 */}
       {dialogVisible && (gameState === 'intro' || gameState === 'calibrating' || gameState === 'win') && (
-        <div id="dialogbox" style={{ display: 'flex' }}>
+        <div
+          id="dialogbox"
+          className={gameState === 'win' ? 'compass-clue-dialogbox' : undefined}
+          style={
+            gameState === 'win'
+              ? {
+                  display: 'flex',
+                  top: '70%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '820px',
+                  height: '240px',
+                  backgroundImage: "url('/assets/LockEndTextArea.png')",
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'center',
+                  backgroundSize: 'contain',
+                }
+              : { display: 'flex' }
+          }
+        >
           <div id="dialog_content">
-            <h2>{dialogText.title}</h2>
+            {dialogText.title && <h2>{dialogText.title}</h2>}
             <p>{dialogText.p1}</p>
             {dialogText.p2 && <p>{dialogText.p2}</p>}
           </div>
-          <button id="startbutton" onClick={handleBtnClick}>
+          <button
+            id="startbutton"
+            className={gameState === 'win' ? 'compass-clue-confirm-btn' : undefined}
+            style={
+              gameState === 'win'
+                ? {
+                    backgroundImage: "url('/assets/LockEndConBtn.png')",
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'center',
+                    backgroundSize: 'contain',
+                  }
+                : undefined
+            }
+            onClick={handleBtnClick}
+          >
             {dialogText.btn}
           </button>
         </div>
