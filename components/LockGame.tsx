@@ -42,15 +42,17 @@ function initLevel(
   });
 
   let angles: number[] = [180, 90, 180];
-  let started = false;
+  let phase: "start" | "game" | "end" = "start";
   let styleEl: HTMLStyleElement | null = null;
+  let winTimer: number | null = null;
 
   render();
   window.addEventListener("resize", updateScale);
 
   function render() {
-    if (!started) renderStart();
-    else renderGame();
+    if (phase === "start") renderStart();
+    else if (phase === "game") renderGame();
+    else renderEnd();
   }
 
   function renderStart() {
@@ -58,17 +60,19 @@ function initLevel(
       <div class="lock-game">
         <div class="lock-stage">
           <img src="/assets/LockBGStart.png" class="lock-bg"/>
-          <img src="/assets/LockStartTextArea.png" class="lock-text"/>
-          <div class="lock-desc">
-            <h2>圓環鎖扣</h2>
-            <p>
-              一個古舊的上鎖木箱，上面的鎖扣看起來並不普通……<br>
-              似乎要旋轉看看才能解鎖。<br><br>
-              利用滑鼠點擊各層圓環，使其順時針旋轉，<br>
-              讓所有線段與中心線段連接即可打開木箱。
-            </p>
+          <div class="lock-start-panel">
+            <img src="/assets/LockStartTextArea.png" class="lock-text"/>
+            <div class="lock-desc">
+              <h2>圓環鎖扣</h2>
+              <p>
+                一個古舊的上鎖木箱，上面的鎖扣看起來並不普通……<br>
+                似乎要旋轉看看才能解鎖。<br><br>
+                利用滑鼠點擊各層圓環，使其順時針旋轉，<br>
+                讓所有線段與中心線段連接即可打開木箱。
+              </p>
+            </div>
+            <img src="/assets/LockStartBtn.png" class="lock-start-btn"/>
           </div>
-          <img src="/assets/LockStartBtn.png" class="lock-start-btn"/>
           <img src="/assets/BackBtn.png" class="lock-back-btn"/>
         </div>
       </div>
@@ -76,9 +80,10 @@ function initLevel(
 
     injectStyle();
     updateScale();
+    fitStartText();
 
     container.querySelector<HTMLImageElement>(".lock-start-btn")!.onclick = () => {
-      started = true;
+      phase = "game";
       render();
     };
     container.querySelector<HTMLImageElement>(".lock-back-btn")!.onclick = () => {
@@ -140,7 +145,7 @@ function initLevel(
     bindEvents();
 
     container.querySelector<HTMLImageElement>(".lock-back-btn")!.onclick = () => {
-      started = false;
+      phase = "start";
       render();
     };
   }
@@ -153,12 +158,50 @@ function initLevel(
       .lock-game { width:100%; height:100%; display:flex; justify-content:center; align-items:center; background:#000; }
       .lock-stage { position:relative; width:900px; height:600px; transform:scale(var(--scale)); transform-origin:center; }
       .lock-bg { position:absolute; width:100%; height:100%; object-fit:contain; }
-      .lock-back-btn { position:absolute; top:30px; left:50px; width:65px; cursor:pointer; }
-      .lock-text { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:65%; }
-      .lock-desc { position:absolute; top:45%; left:50%; transform:translate(-50%, -50%); width:55%; color:white; text-align:center; }
-      .lock-desc h2 { margin-bottom:30px; font-size:24px; }
-      .lock-desc p { font-size:16px; line-height:1.7; }
-      .lock-start-btn { position:absolute; top:69%; left:50%; transform:translate(-50%, -50%); width:120px; cursor:pointer; }
+      .lock-back-btn { position:absolute; top:30px; left:50px; width:65px; cursor:pointer; z-index:30; }
+      .lock-start-panel {
+        position:absolute;
+        top:50%;
+        left:50%;
+        transform:translate(-50%, -50%);
+        width:65%;
+        aspect-ratio: 1024 / 547;
+      }
+      .lock-text {
+        position:absolute;
+        inset:0;
+        width:100%;
+        height:100%;
+        pointer-events:none;
+      }
+      .lock-desc {
+        position:absolute;
+
+        top:12%;
+        left:8%;
+        width:84%;
+        height:62%;
+
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        align-items:center;
+
+        color:white;
+        text-align:center;
+      }
+      .lock-desc h2 { margin:0 0 6% 0; font-size:20px; line-height:1.2; }
+      .lock-desc p { margin:0; font-size:13px; line-height:1.5; word-break:break-word; }
+      .lock-start-btn {
+        position:absolute;
+
+        left:50%;
+        bottom:8%;
+        transform:translateX(-50%);
+
+        width:20%;
+        cursor:pointer;
+      }
       .lock-disc { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:510px; height:510px; }
       .lock-layer { position:absolute; top:50%; left:50%; }
       .lock-layer img { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); pointer-events:none; transition:0.25s; }
@@ -171,9 +214,11 @@ function initLevel(
       .lock-end-modal { position:absolute; inset:0; display:flex; justify-content:center; align-items:center; z-index:200; }
       .lock-end-wrapper { position:relative; width:900px; height:600px; transform:scale(var(--scale)); transform-origin:center; }
       .lock-end-bg { position:absolute; width:100%; height:100%; object-fit:contain; }
-      .lock-end-text { position:absolute; top:70%; left:50%; transform:translate(-50%, -50%); width:75%; pointer-events:none; }
-      .lock-end-desc { position:absolute; top:70%; left:50%; transform:translate(-50%, -50%); width:65%; color:#fff; text-align:left; line-height:1.6; font-size:16px; }
-      .lock-end-btn { position:absolute; bottom:18%; right:17%; width:100px; cursor:pointer; transition:0.2s; }
+      .lock-end-panel { position:absolute; top:70%; left:50%; transform:translate(-50%, -50%); width:75%; aspect-ratio:675 / 188; }
+      .lock-end-text { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+      .lock-end-desc { position:absolute; top:12.8%; left:7.1%; width:83%; color:#fff; text-align:left; line-height:1.6; font-size:16px; }
+      .lock-end-desc p { margin:0; }
+      .lock-end-btn { position:absolute; right:6.2%; bottom:9.6%; width:14.8%; cursor:pointer; transition:0.2s; }
     `;
     document.head.appendChild(styleEl);
   }
@@ -183,6 +228,31 @@ function initLevel(
     const baseH = 600;
     const scale = Math.min(container.clientWidth / baseW, container.clientHeight / baseH);
     container.style.setProperty("--scale", String(scale));
+    if (phase === "start") fitStartText();
+  }
+
+  function fitStartText() {
+    const desc = container.querySelector<HTMLElement>(".lock-desc");
+    const title = desc?.querySelector<HTMLElement>("h2");
+    const body = desc?.querySelector<HTMLElement>("p");
+    if (!desc || !title || !body) return;
+
+    const baseTitle = 22;
+    const baseBody = 16;
+    let titleSize = baseTitle;
+    let bodySize = baseBody;
+
+    title.style.fontSize = `${titleSize}px`;
+    body.style.fontSize = `${bodySize}px`;
+
+    let guard = 0;
+    while (desc.scrollHeight > desc.clientHeight && guard < 20) {
+      titleSize = Math.max(14, titleSize - 0.5);
+      bodySize = Math.max(10, bodySize - 0.5);
+      title.style.fontSize = `${titleSize}px`;
+      body.style.fontSize = `${bodySize}px`;
+      guard += 1;
+    }
   }
 
   function applyRotation() {
@@ -216,39 +286,46 @@ function initLevel(
 
   function checkWin() {
     if (angles.every(a => a % 360 === 0)) {
-      setTimeout(showModal, 200);
+      if (winTimer) window.clearTimeout(winTimer);
+      winTimer = window.setTimeout(() => {
+        phase = "end";
+        render();
+      }, 200);
     }
   }
 
-  function showModal() {
-    const modal = document.createElement("div");
-    modal.className = "lock-end-modal";
-
-    modal.innerHTML = `
+  function renderEnd() {
+    container.innerHTML = `
+      <div class="lock-end-modal">
       <div class="lock-end-wrapper">
         <img src="/assets/LockBGEnd.png" class="lock-end-bg"/>
-        <img src="/assets/LockEndTextArea.png" class="lock-end-text"/>
-        <div class="lock-end-desc">
-          <p>
-            箱子裡有張捲起來的紙——「往東轉一次，不要猶豫。」<br>
-            紙條上的字跡歪扭，你心中升起一股不安。這艘船的每一個謎題，
-            似乎都在測試你的勇氣與直覺。<br><br>
-            得到線索：東（E）1
-          </p>
+        <div class="lock-end-panel">
+          <img src="/assets/LockEndTextArea.png" class="lock-end-text"/>
+          <div class="lock-end-desc">
+            <p>
+              箱子裡有張捲起來的紙——「往東轉一次，不要猶豫。」<br>
+              紙條上的字跡歪扭，你心中升起一股不安。這艘船的每一個謎題，
+              似乎都在測試你的勇氣與直覺。<br><br>
+              得到線索：東（E）1
+            </p>
+          </div>
+          <img src="/assets/LockEndConBtn.png" class="lock-end-btn"/>
         </div>
-        <img src="/assets/LockEndConBtn.png" class="lock-end-btn"/>
+      </div>
       </div>
     `;
 
-    modal.querySelector<HTMLImageElement>(".lock-end-btn")!.onclick = () => {
+    injectStyle();
+    updateScale();
+
+    container.querySelector<HTMLImageElement>(".lock-end-btn")!.onclick = () => {
       onSuccess(true);
     };
-
-    container.appendChild(modal);
   }
 
   return () => {
     window.removeEventListener("resize", updateScale);
+    if (winTimer) window.clearTimeout(winTimer);
     if (styleEl?.parentNode) styleEl.parentNode.removeChild(styleEl);
     container.innerHTML = "";
   };
