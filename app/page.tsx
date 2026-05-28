@@ -9,27 +9,28 @@ import LockGame from '@/components/LockGame';
 import EndGame from '@/components/EndGame';
 
 type LevelId = 'compass' | 'diary' | 'letter' | 'food' | 'lock' | 'end' | null;
+type PuzzleLevelId = Exclude<LevelId, 'end' | null>;
+
+const REQUIRED_LEVELS: PuzzleLevelId[] = ['compass', 'diary', 'letter', 'food', 'lock'];
 
 export default function Home() {
   const [currentScene, setCurrentScene] = useState<'start' | 'intro' | 'main'>('start');
   const [activeLevel, setActiveLevel] = useState<LevelId>(null);
-  const [completedLevels, setCompletedLevels] = useState<string[]>([]);
+  const [completedLevels, setCompletedLevels] = useState<PuzzleLevelId[]>([]);
 
-  const handleLevelClose = (level: Exclude<LevelId, 'end' | null>, completed?: boolean) => {
-    if (completed) {
-      setCompletedLevels(prev => {
-        if (prev.includes(level)) return prev;
-        const next = [...prev, level];
-        if (next.length >= 5) {
-          setActiveLevel('end');
-        } else {
-          setActiveLevel(null);
-        }
-        return next;
-      });
-    } else {
+  const handleLevelClose = (level: PuzzleLevelId, completed?: boolean) => {
+    if (!completed) {
       setActiveLevel(null);
+      return;
     }
+
+    setCompletedLevels(prev => {
+      const next = prev.includes(level) ? prev : [...prev, level];
+      const allLevelsCompleted = REQUIRED_LEVELS.every(requiredLevel => next.includes(requiredLevel));
+
+      setActiveLevel(allLevelsCompleted ? 'end' : null);
+      return next;
+    });
   };
 
   return (

@@ -22,6 +22,19 @@ const GAME_SECONDS = 30;
 const PASSING_SCORE = 200;
 const ASSET_ROOT = '/assets';
 
+const FULLSCREEN_STYLE: React.CSSProperties = {
+  position: 'relative',
+  width: '100vw',
+  height: '100vh',
+  overflow: 'hidden',
+  backgroundColor: '#000',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
+  backgroundSize: 'contain',
+  touchAction: 'none',
+  userSelect: 'none',
+};
+
 const supplyImages: Record<SupplyKind, string> = {
   bottle: `${ASSET_ROOT}/bottle.png`,
   bag: `${ASSET_ROOT}/bag.png`,
@@ -228,7 +241,10 @@ export default function FoodGame({ onSuccess }: FoodGameProps) {
 
   if (pageState === 'introOne') {
     return (
-      <section className="food-fullscreen food-story food-story-one">
+      <section
+        className="food-fullscreen food-story food-story-one"
+        style={{ ...FULLSCREEN_STYLE, backgroundImage: `url('${ASSET_ROOT}/food1.png')` }}
+      >
         <div className="food-image-plane">
           <button className="food-click-target food-back-hitbox" onClick={() => onSuccess(false)} aria-label="返回船艙" />
           <button className="food-click-target food-next-hitbox" onClick={() => setPageState('introTwo')} aria-label="下一頁" />
@@ -239,7 +255,10 @@ export default function FoodGame({ onSuccess }: FoodGameProps) {
 
   if (pageState === 'introTwo') {
     return (
-      <section className="food-fullscreen food-story food-story-two">
+      <section
+        className="food-fullscreen food-story food-story-two"
+        style={{ ...FULLSCREEN_STYLE, backgroundImage: `url('${ASSET_ROOT}/food2.png')` }}
+      >
         <div className="food-image-plane">
           <button className="food-click-target food-back-hitbox" onClick={() => onSuccess(false)} aria-label="返回船艙" />
           <button className="food-click-target food-start-hitbox" onClick={() => beginGame()} aria-label="開始" />
@@ -252,7 +271,13 @@ export default function FoodGame({ onSuccess }: FoodGameProps) {
     const isSuccess = pageState === 'success';
 
     return (
-      <section className={`food-fullscreen food-result ${isSuccess ? 'food-result-success' : 'food-result-fail'}`}>
+      <section
+        className={`food-fullscreen food-result ${isSuccess ? 'food-result-success' : 'food-result-fail'}`}
+        style={{
+          ...FULLSCREEN_STYLE,
+          backgroundImage: `url('${ASSET_ROOT}/${isSuccess ? 'food_success' : 'food_fail'}.png')`,
+        }}
+      >
         <div className="food-image-plane">
           <div className="food-result-score">得分 {score}</div>
           {isSuccess ? (
@@ -269,6 +294,7 @@ export default function FoodGame({ onSuccess }: FoodGameProps) {
     <section
       ref={stageRef}
       className="food-fullscreen food-play-stage"
+      style={{ ...FULLSCREEN_STYLE, backgroundImage: `url('${ASSET_ROOT}/food3.png')`, cursor: 'none' }}
       onMouseMove={handlePointerMove}
       onTouchMove={handleTouchMove}
       onTouchStart={handleTouchMove}
