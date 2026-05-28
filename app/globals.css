@@ -595,3 +595,140 @@ body, html {
     100% { transform: scale(1) translateX(0); }
 }
 .shake-error { animation: arrowShake 0.3s ease-in-out !important; }
+
+/* ==========================================
+   4. 食物接物關卡
+   ========================================== */
+.food-fullscreen {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #000;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    touch-action: none;
+    user-select: none;
+}
+
+.food-story-one { background-image: url('/assets/food1.png'); }
+.food-story-two { background-image: url('/assets/food2.png'); }
+.food-play-stage {
+    background-image: url('/assets/food3.png');
+    cursor: none;
+}
+.food-result-success { background-image: url('/assets/food_success.png'); }
+.food-result-fail { background-image: url('/assets/food_fail.png'); }
+
+.food-image-plane {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(100vw, 140.625vh);
+    height: min(100vh, 71.111vw);
+    transform: translate(-50%, -50%);
+    z-index: 25;
+    pointer-events: none;
+}
+
+.food-stage-hitboxes {
+    z-index: 30;
+}
+
+.food-click-target {
+    position: absolute;
+    border: 0;
+    border-radius: 18px;
+    background: transparent;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.food-click-target:hover {
+    background: radial-gradient(
+        ellipse,
+        rgba(255, 215, 0, 0.45) 0%,
+        rgba(255, 215, 0, 0.15) 45%,
+        rgba(255, 215, 0, 0) 65%
+    );
+    transform: scale(1.03);
+}
+
+.food-back-hitbox { top: 5.5%; left: 3.4%; width: 7.4%; height: 8.8%; }
+.food-next-hitbox,
+.food-start-hitbox { top: 68%; left: 42.8%; width: 14.4%; height: 6.6%; border-radius: 999px; }
+.food-confirm-hitbox { top: 82.7%; left: 71.6%; width: 14.5%; height: 6.8%; border-radius: 999px; }
+.food-retry-hitbox { top: 52.2%; left: 38.6%; width: 22.8%; height: 6.8%; border-radius: 999px; }
+
+.food-hud {
+    position: absolute;
+    top: clamp(18px, 3vw, 34px);
+    left: 50%;
+    display: flex;
+    gap: clamp(10px, 2vw, 22px);
+    align-items: center;
+    justify-content: center;
+    min-width: min(420px, calc(100vw - 150px));
+    padding: 10px 18px;
+    border: 2px solid rgba(255, 233, 177, 0.72);
+    border-radius: 8px;
+    background: rgba(18, 14, 9, 0.72);
+    color: #fff7df;
+    font-size: clamp(17px, 2vw, 26px);
+    font-weight: 800;
+    letter-spacing: 0;
+    transform: translateX(-50%);
+    z-index: 20;
+}
+
+.food-supply {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    pointer-events: none;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.35));
+    will-change: transform;
+}
+
+.food-basket {
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    z-index: 15;
+    width: clamp(92px, 18vw, 168px);
+    height: auto;
+    pointer-events: none;
+    filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.42));
+    will-change: transform;
+}
+
+.food-result-score {
+    position: absolute;
+    left: 50%;
+    top: 34%;
+    color: #fff4d6;
+    font-size: clamp(26px, 3vw, 44px);
+    font-weight: 800;
+    text-align: center;
+    text-shadow: 0 3px 8px rgba(0, 0, 0, 0.9), 0 0 14px rgba(214, 151, 62, 0.65);
+    transform: translate(-50%, -50%);
+}
+
+@media (max-width: 640px) {
+    .food-hud {
+        top: 16px;
+        right: 14px;
+        left: auto;
+        min-width: 0;
+        padding: 8px 10px;
+        transform: none;
+    }
+
+    .food-result-score {
+        top: 33%;
+    }
+}
