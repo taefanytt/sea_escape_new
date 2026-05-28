@@ -74,98 +74,96 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
     }
   };
 
-  if (!isMounted) return <div style={CONTAINER} />;
+  return (
+    <div style={CONTAINER}>
+      {isMounted && gameState !== 'win' && (
+        <button id="compass-back-btn" style={{ top: '20px', left: '280px' }} onClick={() => onSuccess(false)} title="返回船艙" />
+      )}
 
-  if (gameState === 'intro') {
-    return (
-      <div style={CONTAINER}>
-          <button id="compass-back-btn" onClick={() => onSuccess(false)} title="返回船艙" />
-        <div id="dialogbox" style={{ display: 'flex' }}>
+      {/* intro 對話框 */}
+      {isMounted && gameState === 'intro' && (
+        <div id="dialogbox" style={{ display: 'flex', width: '600px', height: '560px' }}>
           <div id="dialog_content">
-            <h2>迷航日誌</h2>
-            <p>航海日誌部分頁面被撕毀。</p>
-            <p>也許某幾頁記錄了關鍵的資訊……</p>
-            <p>試著把撕毀的頁面拼湊看看。</p>
-            <p>桌上散落著被撕毀的紙頁，將紙拼回去即可找到線索。</p>
+            <h2 style={{ fontSize: '28px' }}>迷航日誌</h2>
+            <p style={{ fontSize: '18px' }}>航海日誌部分頁面被撕毀。</p>
+            <p style={{ fontSize: '18px' }}>也許某幾頁記錄了關鍵的資訊……</p>
+            <p style={{ fontSize: '18px' }}>試著把撕毀的頁面拼湊看看。</p>
+            <p style={{ fontSize: '18px' }}>桌上散落著被撕毀的紙頁，將紙拼回去即可找到線索。</p>
           </div>
           <button id="startbutton" onClick={() => setGameState('playing')} />
         </div>
-      </div>
-    );
-  }
+      )}
 
-  if (gameState === 'win') {
-    return (
-      <div style={CONTAINER}>
+      {/* win 畫面 */}
+      {isMounted && gameState === 'win' && (
+        <>
           <img
-          src="/assets/diary/diaryAll.png"
-          alt="完整日誌"
-          style={{
+            src="/assets/diary/diaryAll.png"
+            alt="完整日誌"
+            style={{
+              position: 'absolute',
+              top: '4%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '46%',
+              maxWidth: '560px',
+              maxHeight: '58vh',
+              objectFit: 'contain',
+              userSelect: 'none',
+              zIndex: 2,
+            }}
+          />
+          <div style={{
             position: 'absolute',
-            top: '4%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '46%',
-            maxWidth: '560px',
-            maxHeight: '58vh',
-            objectFit: 'contain',
-            userSelect: 'none',
-            zIndex: 2,
-          }}
-        />
-        <div style={{
-          position: 'absolute',
-          bottom: '3%',
-          left: '15%',
-          right: '15%',
-          maxHeight: '32vh',
-          overflow: 'hidden',
-          backgroundImage: "url('/assets/compass/StoryFrame.png')",
-          backgroundSize: '100% 100%',
-          backgroundRepeat: 'no-repeat',
-          padding: '2% 5%',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '6px',
-          zIndex: 3,
-        }}>
-          <p style={{
-            color: '#fff',
-            fontSize: 'clamp(13px, 1.6vw, 18px)',
-            lineHeight: 1.75,
-            margin: 0,
-            textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
+            bottom: '3%',
+            left: '15%',
+            right: '15%',
+            maxHeight: '32vh',
+            overflow: 'hidden',
+            backgroundImage: "url('/assets/compass/StoryFrame.png')",
+            backgroundSize: '100% 100%',
+            backgroundRepeat: 'no-repeat',
+            padding: '2% 5%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+            zIndex: 3,
           }}>
-            翻開日誌，你看到前人的筆跡中隱隱透露恐懼與執念：<br />
-            「我聽見風的低語...黃金的光芒吸引著我們，也迷惑著我們。」<br />
-            你忽然明白，這些人並非貪財，而是被海域與詛咒的力量牽引。
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
             <p style={{
               color: '#fff',
-              fontSize: 'clamp(13px, 1.8vw, 18px)',
+              fontSize: 'clamp(13px, 1.6vw, 18px)',
+              lineHeight: 1.75,
               margin: 0,
               textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
             }}>
-              得到線索：順序「北 → 西 → 東」
+              翻開日誌，你看到前人的筆跡中隱隱透露恐懼與執念：<br />
+              「我聽見風的低語...黃金的光芒吸引著我們，也迷惑著我們。」<br />
+              你忽然明白，這些人並非貪財，而是被海域與詛咒的力量牽引。
             </p>
-            <img
-              src="/assets/LockEndConBtn.png"
-              alt="確定"
-              style={{ width: 'clamp(80px, 8vw, 110px)', cursor: 'pointer', transition: 'transform 0.2s', marginLeft: 'auto' }}
-              onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.08)')}
-              onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
-              onClick={() => onSuccess(true)}
-            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              <p style={{
+                color: '#fff',
+                fontSize: 'clamp(13px, 1.8vw, 18px)',
+                margin: 0,
+                textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
+              }}>
+                得到線索：順序「北 → 西 → 東」
+              </p>
+              <img
+                src="/assets/LockEndConBtn.png"
+                alt="確定"
+                style={{ width: 'clamp(80px, 8vw, 110px)', cursor: 'pointer', transition: 'transform 0.2s', marginLeft: 'auto' }}
+                onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.08)')}
+                onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                onClick={() => onSuccess(true)}
+              />
+            </div>
           </div>
-        </div>
-      </div>
-    );
-  }
+        </>
+      )}
 
-  return (
-    <div style={CONTAINER}>
-      <button id="compass-back-btn" onClick={() => onSuccess(false)} title="返回船艙" />
+      {/* playing 拼圖區 */}
+      {isMounted && gameState === 'playing' && (
       <DndContext collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
         <div style={{
           display: 'flex',
@@ -251,6 +249,8 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
 
         </div>
       </DndContext>
+      )}
+
     </div>
   );
 }
