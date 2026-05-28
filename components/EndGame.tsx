@@ -122,7 +122,27 @@ export default function EndGame({ onSuccess }: EndGameProps) {
       setTimeout(() => {
         dialogContent.innerHTML = `
           <p>船舵發出沉重的喀噠聲——</p>
-          <p style="color: #ffd700; font-weight: bold;">船隻順利衝破風雨，安全航向歸途！</p>
+          <p>
+          船舵停止轉動。
+          整艘船劇烈震動了一下。</p>
+          <p>
+          海面上的濃霧，開始慢慢散去。
+          </p>
+          <p>
+          你聽見風聲改變了方向。
+          </p>
+          <p>
+          當你再次睜眼時，
+          </p>
+          <p>
+          你已經離開了原本的海域。
+          </p>
+          <p>
+          船長沒有回來。
+          </p>
+          <p>
+          但一切再次恢復平靜。
+          </p>
         `;
         startButton.textContent = '確定';
         dirGameStage.style.display = 'none';
