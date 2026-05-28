@@ -230,6 +230,34 @@ body, html {
     background: url('/assets/LockEndConBtn.png') no-repeat center/contain;
 }
 
+#startbutton.endgame-playagain-btn {
+    top: 83%;
+    left: 50%;
+    width: 160px;
+    height: 60px;
+    background: url('/assets/end/playagain.png') no-repeat center/contain;
+}
+
+#endgame-playagain-btn {
+    position: absolute;
+    top: 70%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: block;
+    width: 120px;
+    height: 60px;
+    background: url('/assets/end/playagain.png') no-repeat center/contain;
+    border: none;
+    cursor: pointer;
+    text-indent: -9999px;
+    transition: transform 0.2s;
+    z-index: 102;
+}
+
+#endgame-playagain-btn:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
 #compass-wrapper {
     position: relative;
     width: 800px; 
@@ -483,6 +511,10 @@ body, html {
     justify-content: center;
     align-items: center;
     overflow: hidden;
+}
+
+#direction-container.ending1-bg {
+    background: #000 url('/assets/ending1.png') no-repeat center center / cover !important;
 }
 
 #direction-container::before {
