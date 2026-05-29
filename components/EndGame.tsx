@@ -6,15 +6,19 @@ interface EndGameProps {
   onSuccess: () => void;
 }
 
-type GameStage = 'intro' | 'playing' | 'ending';
+// 新增 'fail' 狀態代表失敗結局
+type GameStage = 'intro' | 'playing' | 'ending' | 'fail';
 
 export default function EndGame({ onSuccess }: EndGameProps) {
   const [stage, setStage] = useState<GameStage>('intro');
   const [playerInput, setPlayerInput] = useState<string[]>([]);
   const [showClueModal, setShowClueModal] = useState<boolean>(false);
   const [errorBtn, setErrorBtn] = useState<string | null>(null);
+  
+  // 💡 新增狀態：記錄玩家點錯的次數
+  const [errorCount, setErrorCount] = useState<number>(0);
 
-  // 核心正確密碼順序
+  // 正確密碼順序
   const correctSequence = ['N', 'W', 'W', 'W', 'E'];
 
   // 處理方位按鈕點擊
@@ -24,9 +28,19 @@ export default function EndGame({ onSuccess }: EndGameProps) {
 
     // 檢查這次點擊是否與正確答案相符
     if (nextInput[currentIndex] !== correctSequence[currentIndex]) {
+      const nextErrorCount = errorCount + 1;
+      setErrorCount(nextErrorCount);
       setPlayerInput([]); // 答錯了，重設玩家輸入
-      setErrorBtn(dir);   // 觸發該按鈕的 CSS 震動動畫 (shake-error)
-      setTimeout(() => setErrorBtn(null), 300);
+
+      // 💡 判斷是否達到 5 次失敗
+      if (nextErrorCount >= 5) {
+        setTimeout(() => {
+          setStage('fail'); // 進入失敗結局
+        }, 300);
+      } else {
+        setErrorBtn(dir);   // 未滿 5 次，觸發該按鈕的 CSS 震動動畫
+        setTimeout(() => setErrorBtn(null), 300);
+      }
       return;
     }
 
@@ -35,9 +49,16 @@ export default function EndGame({ onSuccess }: EndGameProps) {
     // 檢查是否全數答對通關
     if (nextInput.length === correctSequence.length) {
       setTimeout(() => {
-        setStage('ending'); // 切換到通關結局狀態，背景會自動更換為 ending1.png
+        setStage('ending'); // 進入成功結局
       }, 1000);
     }
+  };
+
+  // 💡 根據結局狀態動態決定背景圖片路徑
+  const getBackgroundImageSrc = () => {
+    if (stage === 'ending') return '/assets/ending1.png';
+    if (stage === 'fail') return '/assets/ending2.png';
+    return '/assets/end/end_bg.png';
   };
 
   return (
@@ -54,12 +75,9 @@ export default function EndGame({ onSuccess }: EndGameProps) {
         alignItems: 'center'
       }}
     >
-      {/* 💡 終極修正背景方案：
-        直接使用 Next.js Image 元件填滿底層，依據 stage 狀態切換預設背景與結局背景。
-        這能完全繞過 CSS 中 !important 導致行內樣式失效的 Bug。
-      */}
+      {/* 依據目前的 stage 渲染對應的背景圖 */}
       <Image
-        src={stage === 'ending' ? '/assets/ending1.png' : '/assets/end/end_bg.png'}
+        src={getBackgroundImageSrc()}
         alt="遊戲背景"
         fill
         priority
@@ -71,20 +89,21 @@ export default function EndGame({ onSuccess }: EndGameProps) {
         }}
       />
 
-      {/* 💡 這裡已經把原先的黑色半透明遮罩層 (rgba(0, 0, 0, 0.55)) 拿掉了 */}
-
-      {/* 主要內容包裝層：
-        確保所有互動 UI 都在背景圖之上 (zIndex: 10)
-      */}
+      {/* 主要互動內容 */}
       <div style={{ position: 'relative', zIndex: 10, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         
         {/* ==========================================
-           1. 故事說明對話框 (遊戲前導 intro 與 結束通關 ending 共用)
+           1. 故事說明對話框 (前導 intro、成功 ending、失敗 fail 三者共用結構)
            ========================================== */}
-        {(stage === 'intro' || stage === 'ending') && (
+        {(stage === 'intro' || stage === 'ending' || stage === 'fail') && (
           <div id="dialogbox" style={{ display: 'flex' }}>
-            <div id="dialog_content">
-              {stage === 'intro' ? (
+            <div id="dialog_content"
+            style={{ 
+              width: '85%',       // 👈 這裡拉寬，文字就不會縮在中間一直換行了！
+              maxWidth: '700px',  // 設定最大寬度防爆
+              top: '45%',         // 維持垂直置中
+            }}>
+              {stage === 'intro' && (
                 <>
                   <h2>歸途的方向</h2>
                   <p>
@@ -93,19 +112,32 @@ export default function EndGame({ onSuccess }: EndGameProps) {
                     依照先前線索，在畫面中的四個方位，依正確順序點擊相應次數。
                   </p>
                 </>
-              ) : (
+              )}
+
+              {stage === 'ending' && (
                 <>
                   <p>船舵發出沉重的喀噠聲——</p>
                   <p>船舵停止轉動。整艘船劇烈震動了一下。</p>
                   <p>海面上的濃霧，開始慢慢散去。</p>
                   <p>你聽見風聲改變了方向。</p>
-                  <p>當你再次睜眼時，你已經離開了原本的海域。</p>
+                  <p><br />當你再次睜眼時，你已經離開了原本的海域。</p>
                   <p>船長沒有回來。但一切再次恢復平靜。</p>
+                </>
+              )}
+
+              {/* 💡 失敗結局的文字敘述，排版樣式完全等同 ending1 */}
+              {stage === 'fail' && (
+                <>
+                  <p>船舵在連續的錯誤指令下劇烈反彈——</p>
+                  <p>狂風瞬間撕裂了主帆，海浪如巨獸般吞噬了甲板。</p>
+                  <p>迷霧化為實體的黑暗，將整艘船徹底籠罩。</p>
+                  <p>指針瘋狂旋轉，暴風雨切斷了最後的歸途……</p>
+                  <p><br />你終究沒能找到正確的方向，永遠留在了這片神祕的海域。</p>
                 </>
               )}
             </div>
 
-            {/* 依據不同階段顯示「開始」或「重新開始」按鈕 */}
+            {/* 按鈕邏輯 */}
             {stage === 'intro' ? (
               <button 
                 id="startbutton" 
@@ -124,7 +156,7 @@ export default function EndGame({ onSuccess }: EndGameProps) {
         )}
 
         {/* ==========================================
-           2. 主要操作舞台 (僅在遊戲進行中 playing 顯示)
+           2. 主要操作舞台 (遊戲進行中)
            ========================================== */}
         {stage === 'playing' && (
           <div id="dir-game-stage">
@@ -135,10 +167,10 @@ export default function EndGame({ onSuccess }: EndGameProps) {
               aria-label="查看線索" 
             />
 
-            {/* 中央轉動羅盤視覺 */}
+            {/* 中央轉動羅盤 */}
             <div id="dir-center-compass"></div>
 
-            {/* 四個互動方位按鈕：對應你的 CSS 位置與背景圖 */}
+            {/* 四個互動方位按鈕 */}
             <button 
               className={`dir-arrow btn-up ${errorBtn === 'S' ? 'shake-error' : ''}`} 
               onClick={() => handleDirClick('S')} 
@@ -160,9 +192,7 @@ export default function EndGame({ onSuccess }: EndGameProps) {
               aria-label="北"
             />
 
-            {/* ==========================================
-               3. 線索提示彈窗 (Modal)
-               ========================================== */}
+            {/* 線索提示彈窗 */}
             {showClueModal && (
               <div id="clue-modal">
                 <div className="clue-modal-box">
