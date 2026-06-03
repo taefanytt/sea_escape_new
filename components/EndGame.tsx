@@ -1,12 +1,11 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 interface EndGameProps {
   onSuccess: () => void;
 }
 
-// 新增 'fail' 狀態代表失敗結局
 type GameStage = 'intro' | 'playing' | 'ending' | 'fail';
 
 export default function EndGame({ onSuccess }: EndGameProps) {
@@ -14,31 +13,46 @@ export default function EndGame({ onSuccess }: EndGameProps) {
   const [playerInput, setPlayerInput] = useState<string[]>([]);
   const [showClueModal, setShowClueModal] = useState<boolean>(false);
   const [errorBtn, setErrorBtn] = useState<string | null>(null);
-  
-  // 💡 新增狀態：記錄玩家點錯的次數
   const [errorCount, setErrorCount] = useState<number>(0);
+  const [scale, setScale] = useState(1);
 
-  // 正確密碼順序
+  // 計算響應式縮放
+  useEffect(() => {
+    const calculateScale = () => {
+      const vw = window.innerWidth;
+      if (vw < 480) {
+        setScale(0.5);
+      } else if (vw < 768) {
+        setScale(0.65);
+      } else if (vw < 1024) {
+        setScale(0.85);
+      } else {
+        setScale(1);
+      }
+    };
+
+    calculateScale();
+    window.addEventListener('resize', calculateScale);
+    return () => window.removeEventListener('resize', calculateScale);
+  }, []);
+
   const correctSequence = ['N', 'W', 'W', 'W', 'E'];
 
-  // 處理方位按鈕點擊
   const handleDirClick = (dir: string) => {
     const nextInput = [...playerInput, dir];
     const currentIndex = nextInput.length - 1;
 
-    // 檢查這次點擊是否與正確答案相符
     if (nextInput[currentIndex] !== correctSequence[currentIndex]) {
       const nextErrorCount = errorCount + 1;
       setErrorCount(nextErrorCount);
-      setPlayerInput([]); // 答錯了，重設玩家輸入
+      setPlayerInput([]);
 
-      // 💡 判斷是否達到 5 次失敗
       if (nextErrorCount >= 5) {
         setTimeout(() => {
-          setStage('fail'); // 進入失敗結局
+          setStage('fail');
         }, 300);
       } else {
-        setErrorBtn(dir);   // 未滿 5 次，觸發該按鈕的 CSS 震動動畫
+        setErrorBtn(dir);
         setTimeout(() => setErrorBtn(null), 300);
       }
       return;
@@ -46,15 +60,13 @@ export default function EndGame({ onSuccess }: EndGameProps) {
 
     setPlayerInput(nextInput);
 
-    // 檢查是否全數答對通關
     if (nextInput.length === correctSequence.length) {
       setTimeout(() => {
-        setStage('ending'); // 進入成功結局
+        setStage('ending');
       }, 1000);
     }
   };
 
-  // 💡 根據結局狀態動態決定背景圖片路徑
   const getBackgroundImageSrc = () => {
     if (stage === 'ending') return '/assets/ending1.png';
     if (stage === 'fail') return '/assets/ending2.png';
@@ -72,10 +84,10 @@ export default function EndGame({ onSuccess }: EndGameProps) {
         overflow: 'hidden',
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        touchAction: 'manipulation'
       }}
     >
-      {/* 依據目前的 stage 渲染對應的背景圖 */}
       <Image
         src={getBackgroundImageSrc()}
         alt="遊戲背景"
@@ -89,19 +101,15 @@ export default function EndGame({ onSuccess }: EndGameProps) {
         }}
       />
 
-      {/* 主要互動內容 */}
       <div style={{ position: 'relative', zIndex: 10, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         
-        {/* ==========================================
-           1. 故事說明對話框 (前導 intro、成功 ending、失敗 fail 三者共用結構)
-           ========================================== */}
         {(stage === 'intro' || stage === 'ending' || stage === 'fail') && (
           <div id="dialogbox" style={{ display: 'flex' }}>
             <div id="dialog_content"
             style={{ 
-              width: '85%',       // 👈 這裡拉寬，文字就不會縮在中間一直換行了！
-              maxWidth: '700px',  // 設定最大寬度防爆
-              top: '45%',         // 維持垂直置中
+              width: '85%',
+              maxWidth: '700px',
+              top: '45%',
             }}>
               {stage === 'intro' && (
                 <>
@@ -125,7 +133,6 @@ export default function EndGame({ onSuccess }: EndGameProps) {
                 </>
               )}
 
-              {/* 💡 失敗結局的文字敘述，排版樣式完全等同 ending1 */}
               {stage === 'fail' && (
                 <>
                   <p>船舵在連續的錯誤指令下劇烈反彈——</p>
@@ -137,7 +144,6 @@ export default function EndGame({ onSuccess }: EndGameProps) {
               )}
             </div>
 
-            {/* 按鈕邏輯 */}
             {stage === 'intro' ? (
               <button 
                 id="startbutton" 
@@ -155,44 +161,53 @@ export default function EndGame({ onSuccess }: EndGameProps) {
           </div>
         )}
 
-        {/* ==========================================
-           2. 主要操作舞台 (遊戲進行中)
-           ========================================== */}
         {stage === 'playing' && (
           <div id="dir-game-stage">
-            {/* 查看線索按鈕 */}
             <button 
               id="clue-toggle-btn" 
               onClick={() => setShowClueModal(true)} 
               aria-label="查看線索" 
             />
 
-            {/* 中央轉動羅盤 */}
             <div id="dir-center-compass"></div>
 
-            {/* 四個互動方位按鈕 */}
             <button 
               className={`dir-arrow btn-up ${errorBtn === 'S' ? 'shake-error' : ''}`} 
               onClick={() => handleDirClick('S')} 
               aria-label="南"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleDirClick('S');
+              }}
             />
             <button 
               className={`dir-arrow btn-left ${errorBtn === 'E' ? 'shake-error' : ''}`} 
               onClick={() => handleDirClick('E')} 
               aria-label="東"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleDirClick('E');
+              }}
             />
             <button 
               className={`dir-arrow btn-right ${errorBtn === 'W' ? 'shake-error' : ''}`} 
               onClick={() => handleDirClick('W')} 
               aria-label="西"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleDirClick('W');
+              }}
             />
             <button 
               className={`dir-arrow btn-down ${errorBtn === 'N' ? 'shake-error' : ''}`} 
               onClick={() => handleDirClick('N')} 
               aria-label="北"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleDirClick('N');
+              }}
             />
 
-            {/* 線索提示彈窗 */}
             {showClueModal && (
               <div id="clue-modal">
                 <div className="clue-modal-box">

@@ -60,8 +60,29 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'win'>('intro');
   const [droppedItems, setDroppedItems] = useState<string[]>([]);
+  const [scale, setScale] = useState(1);
 
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => {
+    setIsMounted(true);
+    
+    // 計算響應式縮放
+    const calculateScale = () => {
+      const vw = window.innerWidth;
+      if (vw < 480) {
+        setScale(0.5);
+      } else if (vw < 768) {
+        setScale(0.65);
+      } else if (vw < 1024) {
+        setScale(0.85);
+      } else {
+        setScale(1);
+      }
+    };
+
+    calculateScale();
+    window.addEventListener('resize', calculateScale);
+    return () => window.removeEventListener('resize', calculateScale);
+  }, []);
 
   useEffect(() => {
     if (droppedItems.length === PIECES.length) setGameState('win');
@@ -77,20 +98,26 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
   return (
     <div style={CONTAINER}>
       {isMounted && gameState !== 'win' && (
-        <button id="compass-back-btn" style={{ top: '20px', left: '280px' }} onClick={() => onSuccess(false)} title="返回船艙" />
+        <button 
+          id="compass-back-btn" 
+          style={{ top: 'max(20px, 2vh)', left: 'max(20px, 2vw)' }} 
+          onClick={() => onSuccess(false)} 
+          title="返回船艙"
+          aria-label="返回"
+        />
       )}
 
       {/* intro 對話框 */}
       {isMounted && gameState === 'intro' && (
-        <div id="dialogbox" style={{ display: 'flex', width: '600px', height: '560px' }}>
+        <div id="dialogbox" style={{ display: 'flex', width: `calc(600px * ${scale})`, height: `calc(560px * ${scale})` }}>
           <div id="dialog_content">
-            <h2 style={{ fontSize: '28px' }}>迷航日誌</h2>
-            <p style={{ fontSize: '18px' }}>航海日誌部分頁面被撕毀。</p>
-            <p style={{ fontSize: '18px' }}>也許某幾頁記錄了關鍵的資訊……</p>
-            <p style={{ fontSize: '18px' }}>試著把撕毀的頁面拼湊看看。</p>
-            <p style={{ fontSize: '18px' }}>桌上散落著被撕毀的紙頁，將紙拼回去即可找到線索。</p>
+            <h2 style={{ fontSize: `calc(28px * ${scale})` }}>迷航日誌</h2>
+            <p style={{ fontSize: `calc(18px * ${scale})` }}>航海日誌部分頁面被撕毀。</p>
+            <p style={{ fontSize: `calc(18px * ${scale})` }}>也許某幾頁記錄了關鍵的資訊……</p>
+            <p style={{ fontSize: `calc(18px * ${scale})` }}>試著把撕毀的頁面拼湊看看。</p>
+            <p style={{ fontSize: `calc(18px * ${scale})` }}>桌上散落著被撕毀的紙頁，將紙拼回去即可找到線索。</p>
           </div>
-          <button id="startbutton" onClick={() => setGameState('playing')} />
+          <button id="startbutton" onClick={() => setGameState('playing')} aria-label="開始" />
         </div>
       )}
 
@@ -105,8 +132,7 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
               top: '4%',
               left: '50%',
               transform: 'translateX(-50%)',
-              width: '46%',
-              maxWidth: '560px',
+              width: `clamp(200px, 46%, 560px)`,
               maxHeight: '58vh',
               objectFit: 'contain',
               userSelect: 'none',
@@ -152,10 +178,17 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
               <img
                 src="/assets/LockEndConBtn.png"
                 alt="確定"
-                style={{ width: 'clamp(80px, 8vw, 110px)', cursor: 'pointer', transition: 'transform 0.2s', marginLeft: 'auto' }}
+                style={{ 
+                  width: 'clamp(80px, 8vw, 110px)', 
+                  cursor: 'pointer', 
+                  transition: 'transform 0.2s',
+                  marginLeft: 'auto',
+                  minHeight: '44px',
+                }}
                 onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.08)')}
                 onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
                 onClick={() => onSuccess(true)}
+                role="button"
               />
             </div>
           </div>
@@ -167,16 +200,25 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
       <DndContext collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
         <div style={{
           display: 'flex',
-          flexDirection: 'row',
+          flexDirection: window.innerWidth < 768 ? 'column' : 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '2rem',
+          gap: `calc(2rem * ${scale})`,
           width: '95vw',
           maxWidth: '1400px',
+          maxHeight: '90vh',
+          overflow: 'auto',
+          padding: '20px 0',
         }}>
 
           {/* 左側：diary01 */}
-          <div style={{ width: '440px', flexShrink: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ 
+            width: window.innerWidth < 768 ? 'calc(220px * 2)' : `calc(440px * ${scale})`, 
+            flexShrink: 0, 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center' 
+          }}>
             {!droppedItems.includes('diary01') ? (
               <DraggableItem
                 id="diary01"
@@ -188,7 +230,11 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
           </div>
 
           {/* 中間：日誌底圖 + 放置區 */}
-          <div style={{ width: '440px', flexShrink: 0, position: 'relative' }}>
+          <div style={{ 
+            width: window.innerWidth < 768 ? 'calc(220px * 2)' : `calc(440px * ${scale})`, 
+            flexShrink: 0, 
+            position: 'relative' 
+          }}>
             <img
               src="/assets/diary/diary.png"
               alt="diary"
@@ -221,11 +267,11 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
 
           {/* 右側：diary02 + diary03 */}
           <div style={{
-            width: '440px',
+            width: window.innerWidth < 768 ? '100%' : `calc(440px * ${scale})`,
             flexShrink: 0,
             display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem',
+            flexDirection: window.innerWidth < 768 ? 'row' : 'column',
+            gap: `calc(1.5rem * ${scale})`,
             alignItems: 'center',
             justifyContent: 'center',
           }}>
@@ -234,7 +280,7 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
                 id="diary02"
                 src="/assets/diary/diary02.png"
                 alt="diary piece 2"
-                style={{ width: '100%', height: 'auto' }}
+                style={{ width: window.innerWidth < 768 ? '45%' : '100%', height: 'auto' }}
               />
             )}
             {!droppedItems.includes('diary03') && (
@@ -242,7 +288,7 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
                 id="diary03"
                 src="/assets/diary/diary03.png"
                 alt="diary piece 3"
-                style={{ width: '100%', height: 'auto' }}
+                style={{ width: window.innerWidth < 768 ? '45%' : '100%', height: 'auto' }}
               />
             )}
           </div>
