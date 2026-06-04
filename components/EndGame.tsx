@@ -14,43 +14,36 @@ export default function EndGame({ onSuccess }: EndGameProps) {
   const [showClueModal, setShowClueModal] = useState<boolean>(false);
   const [errorBtn, setErrorBtn] = useState<string | null>(null);
   const [errorCount, setErrorCount] = useState<number>(0);
-  const [scale, setScale] = useState(1);
-
-  // 計算響應式縮放
-  useEffect(() => {
-    const calculateScale = () => {
-      const vw = window.innerWidth;
-      if (vw < 480) {
-        setScale(0.5);
-      } else if (vw < 768) {
-        setScale(0.65);
-      } else if (vw < 1024) {
-        setScale(0.85);
-      } else {
-        setScale(1);
-      }
-    };
-
-    calculateScale();
-    window.addEventListener('resize', calculateScale);
-    return () => window.removeEventListener('resize', calculateScale);
-  }, []);
+  const [locked, setLocked] = useState<boolean>(false); // 🔥 新增鎖
 
   const correctSequence = ['N', 'W', 'W', 'W', 'E'];
+  const badSequence = ['N', 'W', 'W', 'W', 'E', 'E', 'E'];
 
   const handleDirClick = (dir: string) => {
-    const nextInput = [...playerInput, dir];
-    const currentIndex = nextInput.length - 1;
+    // 防止結局後 or 鎖定後繼續點
+    if (stage !== 'playing' || locked) return;
 
-    if (nextInput[currentIndex] !== correctSequence[currentIndex]) {
+    const nextInput = [...playerInput, dir];
+
+    // 判斷是否還在壞路徑上
+    const isBadPrefix = nextInput.every(
+      (val, idx) => val === badSequence[idx]
+    );
+
+    // 判斷是否還在正確路徑上
+    const isCorrectPrefix = nextInput.every(
+      (val, idx) => val === correctSequence[idx]
+    );
+
+    // 完全錯誤（不屬於任何路徑）
+    if (!isBadPrefix && !isCorrectPrefix) {
       const nextErrorCount = errorCount + 1;
       setErrorCount(nextErrorCount);
       setPlayerInput([]);
 
       if (nextErrorCount >= 5) {
-        setTimeout(() => {
-          setStage('fail');
-        }, 300);
+        setLocked(true);
+        setTimeout(() => setStage('fail'), 300);
       } else {
         setErrorBtn(dir);
         setTimeout(() => setErrorBtn(null), 300);
@@ -58,12 +51,30 @@ export default function EndGame({ onSuccess }: EndGameProps) {
       return;
     }
 
+    // 更新輸入
     setPlayerInput(nextInput);
 
-    if (nextInput.length === correctSequence.length) {
+    // 壞結局
+    if (isBadPrefix && nextInput.length === badSequence.length) {
+      setLocked(true); // 鎖住
+      setTimeout(() => setStage('fail'), 300);
+      return;
+    }
+
+    // 好結局
+    if (
+      isCorrectPrefix &&
+      nextInput.length === correctSequence.length
+    ) {
+      // 等一下，看玩家會不會繼續輸入（走壞結局）
       setTimeout(() => {
-        setStage('ending');
-      }, 1000);
+        setLocked((prev) => {
+          if (!prev) {
+            setStage('ending');
+          }
+          return true;
+        });
+      }, 800); // 給玩家時間繼續按 E
     }
   };
 
