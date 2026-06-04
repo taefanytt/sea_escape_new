@@ -14,21 +14,22 @@ export default function EndGame({ onSuccess }: EndGameProps) {
   const [showClueModal, setShowClueModal] = useState<boolean>(false);
   const [errorBtn, setErrorBtn] = useState<string | null>(null);
   const [errorCount, setErrorCount] = useState<number>(0);
+  const [locked, setLocked] = useState<boolean>(false);
+
+  // 💡 響應式縮放因子
   const [scale, setScale] = useState(1);
 
-  // 計算響應式縮放
+  const correctSequence = ['N', 'W', 'W', 'W', 'E'];
+  const badSequence = ['N', 'W', 'W', 'W', 'E', 'E', 'E'];
+
+  // 💡 監聽螢幕寬度來動態更新縮放因子
   useEffect(() => {
     const calculateScale = () => {
       const vw = window.innerWidth;
-      if (vw < 480) {
-        setScale(0.5);
-      } else if (vw < 768) {
-        setScale(0.65);
-      } else if (vw < 1024) {
-        setScale(0.85);
-      } else {
-        setScale(1);
-      }
+      if (vw < 480) setScale(0.5);
+      else if (vw < 768) setScale(0.65);
+      else if (vw < 1024) setScale(0.85);
+      else setScale(1);
     };
 
     calculateScale();
@@ -36,21 +37,21 @@ export default function EndGame({ onSuccess }: EndGameProps) {
     return () => window.removeEventListener('resize', calculateScale);
   }, []);
 
-  const correctSequence = ['N', 'W', 'W', 'W', 'E'];
-
   const handleDirClick = (dir: string) => {
-    const nextInput = [...playerInput, dir];
-    const currentIndex = nextInput.length - 1;
+    if (stage !== 'playing' || locked) return;
 
-    if (nextInput[currentIndex] !== correctSequence[currentIndex]) {
+    const nextInput = [...playerInput, dir];
+    const isBadPrefix = nextInput.every((val, idx) => val === badSequence[idx]);
+    const isCorrectPrefix = nextInput.every((val, idx) => val === correctSequence[idx]);
+
+    if (!isBadPrefix && !isCorrectPrefix) {
       const nextErrorCount = errorCount + 1;
       setErrorCount(nextErrorCount);
       setPlayerInput([]);
 
       if (nextErrorCount >= 5) {
-        setTimeout(() => {
-          setStage('fail');
-        }, 300);
+        setLocked(true);
+        setTimeout(() => setStage('fail'), 300);
       } else {
         setErrorBtn(dir);
         setTimeout(() => setErrorBtn(null), 300);
@@ -60,10 +61,21 @@ export default function EndGame({ onSuccess }: EndGameProps) {
 
     setPlayerInput(nextInput);
 
-    if (nextInput.length === correctSequence.length) {
+    if (isBadPrefix && nextInput.length === badSequence.length) {
+      setLocked(true);
+      setTimeout(() => setStage('fail'), 300);
+      return;
+    }
+
+    if (isCorrectPrefix && nextInput.length === correctSequence.length) {
       setTimeout(() => {
-        setStage('ending');
-      }, 1000);
+        setLocked((prev) => {
+          if (!prev) {
+            setStage('ending');
+          }
+          return true;
+        });
+      }, 800);
     }
   };
 
@@ -77,16 +89,7 @@ export default function EndGame({ onSuccess }: EndGameProps) {
     <div 
       id="direction-container" 
       className={stage === 'ending' ? 'ending1-bg' : ''}
-      style={{ 
-        position: 'relative', 
-        width: '100vw', 
-        height: '100vh', 
-        overflow: 'hidden',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        touchAction: 'manipulation'
-      }}
+      style={{ '--scale': scale } as React.CSSProperties} /* 💡 把縮放因子傳給 CSS */
     >
       <Image
         src={getBackgroundImageSrc()}
@@ -101,16 +104,12 @@ export default function EndGame({ onSuccess }: EndGameProps) {
         }}
       />
 
-      <div style={{ position: 'relative', zIndex: 10, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div id="dir-stage-wrapper">
         
         {(stage === 'intro' || stage === 'ending' || stage === 'fail') && (
-          <div id="dialogbox" style={{ display: 'flex' }}>
-            <div id="dialog_content"
-            style={{ 
-              width: '85%',
-              maxWidth: '700px',
-              top: '45%',
-            }}>
+          <div id="dialogbox">
+            {/* 💡 已剔除所有 style 行內限制，讓定位完全遵從 CSS 統一等比例縮放 */}
+            <div id="dialog_content">
               {stage === 'intro' && (
                 <>
                   <h2>歸途的方向</h2>

@@ -335,10 +335,10 @@ body, html {
 }
 
 /* ========================================== 
-   1. 羅盤關卡 - 響應式設計
+    1. 羅盤關卡 - 響應式設計
    ========================================== */
 
-#compass-container {
+   #compass-container {
     width: 100vw;
     height: 100vh;
     background: #000 url('/assets/compass/Compass_bg.png') no-repeat center center / cover;
@@ -347,19 +347,6 @@ body, html {
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    transform: scale(var(--scale));
-    transform-origin: center;
-}
-
-@media (max-width: 768px) {
-    #compass-container {
-        width: min(100vw, 140.625vh);
-        height: min(100vh, 71.111vw);
-        max-width: 100%;
-        max-height: 100%;
-        background-size: contain;
-        transform: none;
-    }
 }
 
 #compass-container::before {
@@ -371,30 +358,34 @@ body, html {
     pointer-events: none;
 }
 
+/* 🎯 對話框：元件與文字一起等比例縮放 */
 #dialogbox {
     position: absolute;
-    width: calc(800px * var(--scale) / var(--scale));
-    height: calc(800px * var(--scale) / var(--scale));
+    width: 800px;  /* 💡 統一使用大螢幕的基本像素 (Base Size) */
+    height: 800px; 
     background: url('/assets/compass/StoryFrame.png') no-repeat center center/contain;
-    padding: calc(40px * var(--text-scale));
+    padding: 40px;
     box-sizing: border-box;
     z-index: 100;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    max-width: 85vw;
-    max-height: 85vh;
+    
+    /* 💡 核心：利用 translate 置中，並乘上 --scale 讓框、文字、按鈕一起變小 */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(var(--scale, 1));
+    transform-origin: center center;
 }
 
+/* 遊戲勝利時的線索對話框 */
 #dialogbox.compass-clue-dialogbox {
-    width: calc(820px * var(--scale) / var(--scale));
-    height: calc(240px * var(--scale) / var(--scale));
+    width: 820px;
+    height: 240px;
     background: url('/assets/LockEndTextArea.png') no-repeat center center/contain;
-}
-
-#dialogbox.compass-clue-dialogbox #dialog_content p {
-    font-size: calc(25px * var(--text-scale));
+    top: 70%; 
+    transform: translate(-50%, -50%) scale(var(--scale, 1));
 }
 
 #dialog_content {
@@ -408,84 +399,58 @@ body, html {
     z-index: 101;
 }
 
+/* 💡 文字直接寫死固定大解析度，它們會乖乖跟著外層的 scale 一起變小 */
 #dialog_content h2 {
-    font-size: calc(40px * var(--text-scale));
-    margin-bottom: calc(30px * var(--text-scale));
+    font-size: 40px;
+    margin-bottom: 30px;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
 }
 
-#dialog_content p {
-    font-size: calc(25px * var(--text-scale));
+#dialog_content p,
+#dialogbox.compass-clue-dialogbox #dialog_content p {
+    font-size: 25px;
     line-height: 1.7;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
 }
 
+/* 按鈕：不需額外計算，大小會自動跟著 #dialogbox 的 scale 縮放 */
 #startbutton {
     position: absolute;
     top: 72%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: calc(120px * var(--scale) / var(--scale));
-    height: calc(45px * var(--scale) / var(--scale));
+    transform: translate(-50%, -50%); 
+    width: 120px;
+    height: 45px;
     background: url('/assets/compass/startbutton.png') no-repeat center/contain;
     border: none;
     cursor: pointer;
     text-indent: -9999px;
     z-index: 102;
     transition: transform 0.2s;
-    min-width: var(--touch-min);
-    min-height: var(--touch-min);
 }
 
 #startbutton:hover {
-    transform: translate(-50%, -50%) scale(1.05);
+    transform: translate(-50%, -50%) scale(1.05); /* 這裡的 scale 是 hover 放大效果 */
 }
 
 #startbutton.compass-clue-confirm-btn {
     top: 83%;
-    left: 50%;
-    width: calc(100px * var(--scale) / var(--scale));
-    height: calc(52px * var(--scale) / var(--scale));
+    width: 100px;
+    height: 52px;
     background: url('/assets/LockEndConBtn.png') no-repeat center/contain;
 }
 
-#startbutton.endgame-playagain-btn {
-    top: 83%;
-    left: 50%;
-    width: calc(160px * var(--scale) / var(--scale));
-    height: calc(60px * var(--scale) / var(--scale));
-    background: url('/assets/end/playagain.png') no-repeat center/contain;
-}
-
-#endgame-playagain-btn {
-    position: absolute;
-    top: 70%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    display: block;
-    width: calc(120px * var(--scale) / var(--scale));
-    height: calc(60px * var(--scale) / var(--scale));
-    background: url('/assets/end/playagain.png') no-repeat center/contain;
-    border: none;
-    cursor: pointer;
-    text-indent: -9999px;
-    transition: transform 0.2s;
-    z-index: 102;
-    min-width: var(--touch-min);
-    min-height: var(--touch-min);
-}
-
-#endgame-playagain-btn:hover {
-    transform: translate(-50%, -50%) scale(1.05);
-}
-
+/* 🎯 羅盤與拼圖外包裝：同樣整體一起等比例縮放 */
 #compass-wrapper {
-    position: relative;
-    width: calc(800px * var(--scale) / var(--scale));
-    height: calc(800px * var(--scale) / var(--scale));
+    position: absolute; 
+    top: 50%;
+    left: 50%;
+    width: 800px;
+    height: 800px;
     z-index: 10;
-    max-width: 85vw;
-    max-height: 85vh;
+    /* 💡 讓羅盤主體、指針、所有拼圖碎片的「顯示大小」都跟著同一個比例縮小 */
+    transform: translate(-50%, -50%) scale(var(--scale, 1));
+    transform-origin: center center;
 }
 
 #compass-full {
@@ -501,14 +466,13 @@ body, html {
 
 .puzzle-piece {
     position: absolute;
-    width: calc(400px * var(--scale) / var(--scale));
-    height: calc(400px * var(--scale) / var(--scale));
+    width: 400px;
+    height: 400px;
     cursor: grab;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    max-width: 50vw;
-    max-height: 50vh;
+    /* 💡 注意：由於外層 wrapper 已經 scale 縮小了，這裡直接填原本的尺寸即可 */
 }
 
 #npiece { background-image: url('/assets/compass/Compass1.png'); }
@@ -520,34 +484,30 @@ body, html {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: calc(500px * var(--scale) / var(--scale));
-    height: calc(500px * var(--scale) / var(--scale));
+    width: 500px;
+    height: 500px;
     transform: translate(-50%, -50%) rotate(0deg);
-    background: url('/assets/pointer.png') no-repeat center/contain;
+    background: url('/assets/compass/pointer.png') no-repeat center/contain;
     transform-origin: center center;
     transition: transform 0.8s ease;
     z-index: 20;
     pointer-events: none;
-    max-width: 60vw;
-    max-height: 60vh;
 }
 
+/* 返回按鈕：通常不想讓它縮得太小導致手機按不到，所以維持原大（不吃 scale） */
 #compass-back-btn {
     position: absolute;
     top: max(20px, 2vh);
     left: max(20px, 2vw);
-    width: calc(65px * var(--scale) / var(--scale));
-    height: calc(65px * var(--scale) / var(--scale));
+    width: 65px;
+    height: 65px;
     background: url('/assets/compass/backbutton.png') no-repeat center/contain;
     border: none;
     cursor: pointer;
     background-color: transparent;
     z-index: 150;
     transition: transform 0.2s ease;
-    min-width: var(--touch-min);
-    min-height: var(--touch-min);
 }
-
 #compass-back-btn:hover {
     transform: scale(1.1);
 }
