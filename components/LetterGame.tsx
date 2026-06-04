@@ -15,10 +15,14 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
 
     container.innerHTML = `
       <div class="letter-game-box">
+          <button id="real-back-button" class="real-back-btn" style="display: block;">
+            <img src="/assets/BackBtn.png" alt="返回" style="width:100%;height:100%;object-fit:contain;" />
+          </button>
+
           <div class="stage-wrapper">
               <img id="game-stage" src="/assets/letter_1.png" alt="遊戲背景" />
               <img id="drag-candle" src="/assets/letter_candle.png" alt="蠟燭" draggable="true" style="display: none;" />
-              <div id="hotspot-back" class="hotspot" style="display: block;"></div>
+              
               <div id="hotspot-start" class="hotspot" style="display: block;"></div>
               <div id="hotspot-letter-target" class="hotspot" style="display: none;"></div>
               <div id="hotspot-click-next" class="hotspot" style="display: none;"></div>
@@ -27,19 +31,43 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
       </div>
       <style>
             .letter-game-box {
-              /* Fill the entire overlay area so the image can scale to maximum visible size */
+              position: relative; /* 讓真實返回按鈕可以相對於這個大框框做絕對定位 */
               width: 100%;
               height: 100%;
               display: flex;
               justify-content: center;
               align-items: center;
-              background: transparent;
+              background: #111; /* 保持精美置中時的黑底沉浸感 */
               border-radius: 0;
               padding: 0;
               box-sizing: border-box;
               overflow: hidden;
             }
 
+            .real-back-btn {
+              position: absolute;
+              top: 20px;
+              left: 20px;
+              width: 50px;
+              height: 50px;
+              background: transparent;  /* 移除背景色 */
+              border: none;
+              border-radius: 0;         /* 移除圓角 */
+              padding: 0;
+              cursor: pointer;
+              z-index: 100;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              box-shadow: none;         /* 移除陰影 */
+              transition: transform 0.1s;
+            }
+            .real-back-btn:hover {
+              background: transparent;
+            }
+            .real-back-btn:active {
+              transform: scale(0.95);
+            }
             .stage-wrapper {
               position: relative;
               display: flex;
@@ -79,12 +107,6 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
               background: rgba(0, 0, 0, 0);
           }
 
-          #hotspot-back {
-              top: 0%; left: 10%;
-              width: 15%; height: 15%;
-              z-index: 30;
-          }
-
           #hotspot-start {
               top: 15%; left: 0%;
               width: 100%; height: 85%;
@@ -113,7 +135,7 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
 
     const gameStage = container.querySelector<HTMLImageElement>('#game-stage');
     const dragCandle = container.querySelector<HTMLImageElement>('#drag-candle');
-    const hotspotBack = container.querySelector<HTMLDivElement>('#hotspot-back');
+    const realBackButton = container.querySelector<HTMLButtonElement>('#real-back-button'); // 🌟 抓取新按鈕
     const hotspotStart = container.querySelector<HTMLDivElement>('#hotspot-start');
     const hotspotLetter = container.querySelector<HTMLDivElement>('#hotspot-letter-target');
     const hotspotNext = container.querySelector<HTMLDivElement>('#hotspot-click-next');
@@ -133,14 +155,32 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
       cleanupFns.push(() => element.removeEventListener(type, listener));
     };
 
-    register(hotspotBack, 'click', () => {
+    // 🌟 更改處：將點擊監聽改綁在「真實實體按鈕」上，並對齊你的返回與隱藏邏輯
+    register(realBackButton, 'click', (e: Event) => {
+      if (e) e.stopPropagation(); 
+      
       if (currentStep === 1) {
+        // 步驟 1 點返回：直接退出關卡
         onSuccess(false);
-      } else if (currentStep === 3) {
+      } 
+      else if (currentStep === 2) {
+        // 🌟 依據鎖扣邏輯：步驟 2 (letter_2-1) 點返回：回到步驟 1 (letter_1)
+        currentStep = 1;
+        if (gameStage) gameStage.src = '/assets/letter_1.png';
+        if (hotspotStart) hotspotStart.style.display = 'block';
+        if (dragCandle) dragCandle.style.display = 'none';
+        if (hotspotLetter) hotspotLetter.style.display = 'none';
+        if (realBackButton) realBackButton.style.display = 'block'; // 確保返回按鈕在
+      }
+      else if (currentStep === 3) {
+        // 步驟 3 (letter_2-2) 點返回：回到步驟 2 (letter_2-1 重新烤信)
         currentStep = 2;
         if (gameStage) gameStage.src = '/assets/letter_2-1.png';
         if (hotspotNext) hotspotNext.style.display = 'none';
-        if (hotspotBack) hotspotBack.style.display = 'none';
+        
+        // 🌟 依據新邏輯：在步驟 2 時返回鈕依然要開著，讓玩家可以一路退回第一頁說明
+        if (realBackButton) realBackButton.style.display = 'block'; 
+        
         if (dragCandle) {
           dragCandle.style.display = 'block';
           dragCandle.style.visibility = 'visible';
@@ -152,10 +192,12 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
     register(hotspotStart, 'click', () => {
       currentStep = 2;
       if (hotspotStart) hotspotStart.style.display = 'none';
-      if (hotspotBack) hotspotBack.style.display = 'none';
       if (gameStage) gameStage.src = '/assets/letter_2-1.png';
       if (dragCandle) dragCandle.style.display = 'block';
       if (hotspotLetter) hotspotLetter.style.display = 'block';
+      
+      // 🌟 進入步驟 2，返回鈕維持 block 不隱藏
+      if (realBackButton) realBackButton.style.display = 'block';
     });
 
     if (dragCandle) {
@@ -185,7 +227,7 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
         if (dragCandle) dragCandle.style.display = 'none';
         if (hotspotLetter) hotspotLetter.style.display = 'none';
         if (gameStage) gameStage.src = '/assets/letter_2-2.png';
-        if (hotspotBack) hotspotBack.style.display = 'block';
+        if (realBackButton) realBackButton.style.display = 'block';
         if (hotspotNext) hotspotNext.style.display = 'block';
       });
     }
@@ -193,7 +235,10 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
     register(hotspotNext, 'click', () => {
       currentStep = 4;
       if (hotspotNext) hotspotNext.style.display = 'none';
-      if (hotspotBack) hotspotBack.style.display = 'none';
+      
+      // 最後一頁線索頁，為了防呆與強制玩家通關，隱藏左上角返回按鈕
+      if (realBackButton) realBackButton.style.display = 'none'; 
+      
       if (gameStage) gameStage.src = '/assets/letter_3.png';
       if (hotspotWin) hotspotWin.style.display = 'block';
     });
