@@ -691,10 +691,13 @@ body, html {
 } */
 
 /* ========================================== 
-   3. 最終關卡：歸途的方向 - 響應式設計
+    3. 最終關卡：歸途的方向 - 羅盤關響應式邏輯
    ========================================== */
 
-#direction-container {
+/* ========================================== 
+   🎯 最外層背景：確保在手機上也是放大貼滿
+   ========================================== */
+   #direction-container {
     width: 100vw;
     height: 100vh;
     background: #000 url('/assets/end/end_bg.png') no-repeat center center / cover !important;
@@ -705,16 +708,7 @@ body, html {
     overflow: hidden;
 }
 
-@media (max-width: 768px) {
-    #direction-container {
-        width: min(100vw, 140.625vh);
-        height: min(100vh, 71.111vw);
-        max-width: 100%;
-        max-height: 100%;
-        background-size: contain;
-    }
-}
-
+/* 當小於 ending1 狀態時的滿版設定 */
 #direction-container.ending1-bg {
     background: #000 url('/assets/ending1.png') no-repeat center center / cover !important;
 }
@@ -722,72 +716,135 @@ body, html {
 #direction-container::before {
     content: "";
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background: rgba(0, 0, 0, 0.55);
     z-index: 1;
     pointer-events: none;
 }
 
-#dir-game-stage {
-    position: relative;
-    width: calc(800px * var(--scale) / var(--scale));
-    height: calc(800px * var(--scale) / var(--scale));
-    z-index: 10;
-    max-width: 85vw;
-    max-height: 85vh;
+
+
+/* ========================================== 
+   🎯 最終完美版：手機與平板響應式自適應（解決遮擋與切邊）
+   ========================================== */
+   @media (max-width: 768px) {
+    
+    /* 1. 背景放大貼滿全螢幕，不留黑邊斷層 */
+    #direction-container {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        background-size: cover !important; 
+        background-position: center center !important;
+    }
+
+    /* 2. 修正按鈕往外推的距離：調大像素以抵消 scale(0.5) 的折半效應 */
+    /* 💡 透過加大這組數字，能強迫箭頭按鈕在手機版時完美退到羅盤外圈，絕對不擋字！ */
+    
+    .btn-up {
+        margin-top: -240px !important;  /* 💡 從 -150px 往外推到 -240px，讓上箭頭往上彈開 */
+    }
+
+    .btn-down {
+        margin-top: 240px !important;   /* 💡 從 150px 往外推到 240px，讓下箭頭往下彈開 */
+    }
+
+    .btn-left {
+        margin-left: -240px !important; /* 💡 從 -170px 往外推到 -240px，讓左箭頭往左彈開 */
+    }
+
+    .btn-right {
+        margin-left: 240px !important;  /* 💡 從 170px 往外推到 240px，讓右箭頭往右彈開 */
+    }
+
+    /* 3. 提示按鈕（查看線索）安全收進來，離邊緣更遠、好點擊 */
+    #clue-toggle-btn {
+        position: absolute !important;
+        top: 40px !important;    
+        right: 40px !important;  
+        z-index: 150 !important;
+    }
 }
 
+/* 🎯 遊戲階段主體：複製羅盤關 compass-wrapper 的等比例縮放邏輯 */
+#dir-game-stage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 800px;
+    height: 800px;
+    z-index: 10;
+    /* 💡 使用 scale 統一縮放按鈕與中間的圓盤，完美適應手機且不切邊 */
+    transform: translate(-50%, -50%) scale(var(--scale, 1));
+    transform-origin: center center;
+}
+
+/* 🎯 對話文字框：完全複製羅盤關 #dialogbox 邏輯，防止文字超出 */
 #direction-container #dialogbox {
     position: absolute;
-    width: calc(800px * var(--scale) / var(--scale));
-    height: calc(800px * var(--scale) / var(--scale));
+    width: 800px;  /* 💡 固定大螢幕基底尺寸 */
+    height: 800px; 
     background: url('/assets/compass/StoryFrame.png') no-repeat center center/contain;
-    padding: calc(40px * var(--text-scale));
+    padding: 60px; /* 💡 固定大螢幕內邊距，保留充裕的文字伸展空間 */
     box-sizing: border-box;
     z-index: 100;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    max-width: 85vw;
-    max-height: 85vh;
+    
+    top: 50%;
+    left: 50%;
+    /* 💡 核心：利用 scale 讓框、背景、文字、按鈕一起變小。因為文字和框綁在一起縮小，字體絕對不會溢出 */
+    transform: translate(-50%, -50%) scale(var(--scale, 1));
+    transform-origin: center center;
 }
 
+#direction-container #dialog_content {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 75%; /* 💡 給予安全的左右留白面寬 */
+    color: #fff;
+    text-align: center;
+    z-index: 101;
+}
+
+/* 💡 文字不使用 calc，直接定義最完美的原始大字體，它們會乖乖跟隨 scale 自動等比例縮小 */
 #direction-container #dialog_content h2 {
-    font-size: calc(40px * var(--text-scale));
-    margin-bottom: calc(30px * var(--text-scale));
+    font-size: 40px;
+    margin-bottom: 30px;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 #direction-container #dialog_content p {
-    font-size: calc(23px * var(--text-scale));
+    font-size: 23px;
     line-height: 1.7;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
 }
 
+/* 🎯 中間大羅盤圖片（在 800x800 體系內定位，不寫死殘留的 vw/vh 限制） */
 #dir-center-compass {
     position: absolute;
     top: 57%;
     left: 50%;
-    width: calc(250px * var(--scale) / var(--scale));
-    height: calc(250px * var(--scale) / var(--scale));
+    width: 250px;
+    height: 250px;
     background: url('/assets/compass/Compass.png') no-repeat center/contain;
     transform: translate(-50%, -50%) rotate(180deg);
     z-index: 5;
     pointer-events: none;
     opacity: 0.9;
     filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
-    max-width: 40vw;
-    max-height: 40vh;
 }
 
+/* 🎯 四大方向按鈕（保留你原本完美調製好的 margin 偏置置中法） */
 .dir-arrow {
     position: absolute;
-    width: calc(70px * var(--scale) / var(--scale));
-    height: calc(70px * var(--scale) / var(--scale));
+    width: 70px;
+    height: 70px;
     border: none;
     cursor: pointer;
     background-color: transparent;
@@ -800,10 +857,10 @@ body, html {
     min-height: var(--touch-min);
 }
 
+/* 💡 保留你原本美麗的 hover 放大比例 */
 .dir-arrow:hover {
     transform: scale(1.1);
 }
-
 .dir-arrow:active {
     transform: scale(0.95);
 }
@@ -811,50 +868,88 @@ body, html {
 .btn-up {
     top: 25%;
     left: 50%;
-    margin-left: calc(-35px * var(--scale) / var(--scale));
+    margin-left: -35px; /* 💡 去掉 calc，直接給予固定偏移值 */
     background-image: url('/assets/end/up.png');
 }
 
 .btn-down {
     bottom: 7%;
     left: 50%;
-    margin-left: calc(-35px * var(--scale) / var(--scale));
+    margin-left: -35px;
     background-image: url('/assets/end/down.png');
 }
 
 .btn-left {
     top: 60%;
     left: 15%;
-    margin-top: calc(-35px * var(--scale) / var(--scale));
+    margin-top: -35px;
     background-image: url('/assets/end/left.png');
 }
 
 .btn-right {
     top: 60%;
     right: 15%;
-    margin-top: calc(-35px * var(--scale) / var(--scale));
+    margin-top: -35px;
     background-image: url('/assets/end/right.png');
 }
 
+/* 🎯 線索提示按鈕 */
 #clue-toggle-btn {
     position: absolute;
-    top: max(20px, 2vh);
-    right: max(20px, 2vw);
+    top: 20px;
+    right: 20px;
     border: none;
     background: transparent url('/assets/end/clues_button.png') no-repeat center / contain;
-    width: calc(140px * var(--scale) / var(--scale));
-    height: calc(45px * var(--scale) / var(--scale));
+    width: 140px;
+    height: 45px;
     z-index: 50;
     cursor: pointer;
     transition: transform 0.2s;
     min-width: var(--touch-min);
     min-height: var(--touch-min);
 }
-
 #clue-toggle-btn:hover {
     transform: scale(1.05);
 }
 
+/* 🎯 開始 / 重新開始按鈕（在對話框內，不單獨寫行內樣式） */
+#startbutton {
+    position: absolute;
+    top: 72%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px;
+    height: 45px;
+    background: url('/assets/compass/startbutton.png') no-repeat center/contain;
+    border: none;
+    cursor: pointer;
+    text-indent: -9999px;
+    z-index: 102;
+    transition: transform 0.2s;
+}
+#startbutton:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+#endgame-playagain-btn {
+    position: absolute;
+    top: 70%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px;
+    height: 60px;
+    background: url('/assets/end/playagain.png') no-repeat center/contain;
+    border: none;
+    cursor: pointer;
+    text-indent: -9999px;
+    transition: transform 0.2s;
+    z-index: 102;
+}
+#endgame-playagain-btn:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* 🎯 提示全螢幕黑框（維持 fixed 獨立滿版，不受遊戲元件縮放影響） */
 #clue-modal {
     position: fixed;
     inset: 0;
@@ -868,7 +963,7 @@ body, html {
 
 .clue-modal-box {
     background: #1b2b3a;
-    padding: calc(30px * var(--text-scale));
+    padding: 30px; /* 💡 移除 calc */
     border: 2px solid #d8a85f;
     border-radius: 12px;
     color: white;
@@ -879,7 +974,7 @@ body, html {
 }
 
 .clue-modal-box p {
-    font-size: calc(18px * var(--text-scale));
+    font-size: 18px; /* 💡 移除 calc */
     margin: 12px 0;
 }
 
@@ -897,10 +992,10 @@ body, html {
     font-weight: bold;
     border-radius: 4px;
     cursor: pointer;
-    font-size: calc(14px * var(--text-scale));
-    min-height: var(--touch-min);
+    font-size: 14px; /* 💡 移除 calc */
 }
 
+/* 錯誤抖動動畫 */
 @keyframes arrowShake {
     0% { transform: scale(1) translateX(0); }
     20% { transform: scale(1) translateX(-8px); }
@@ -909,7 +1004,6 @@ body, html {
     80% { transform: scale(1) translateX(3px); }
     100% { transform: scale(1) translateX(0); }
 }
-
 .shake-error {
     animation: arrowShake 0.3s ease-in-out !important;
 }
