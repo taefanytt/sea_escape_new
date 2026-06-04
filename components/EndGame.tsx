@@ -113,7 +113,8 @@ export default function EndGame({ onSuccess }: EndGameProps) {
                 <h2>歸途的方向</h2>
                 <p>
                   船舵在風雨中微微晃動，彷彿在等待指令。<br />
-                  真假難辨的線索已全數集齊，現在，該由你決定最終的航向了……<br /><br />
+                  <span style={{ color: '#d8a85f' }}>真假難辨的線索</span>
+                  已全數集齊，現在，該由你決定最終的航向了……<br /><br />
                   依照先前線索，在畫面中的四個方位，依正確順序點擊相應次數。
                 </p>
               </>
