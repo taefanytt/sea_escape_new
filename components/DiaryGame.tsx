@@ -44,11 +44,7 @@ const PIECES = [
 const CONTAINER: React.CSSProperties = {
   width: '100vw',
   height: '100vh',
-  backgroundColor: '#000',
-  backgroundImage: `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url('/assets/diary/4.png')`,
-  backgroundSize: 'cover, auto 100vh',
-  backgroundPosition: 'center, center',
-  backgroundRepeat: 'no-repeat, no-repeat',
+  background: `#000 url('/assets/diary/4.png') no-repeat center center / cover`,
   position: 'relative',
   overflow: 'hidden',
   display: 'flex',
@@ -61,22 +57,20 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'win'>('intro');
   const [droppedItems, setDroppedItems] = useState<string[]>([]);
   const [scale, setScale] = useState(1);
+  const [introScale, setIntroScale] = useState(1);
 
   useEffect(() => {
     setIsMounted(true);
-    
-    // 計算響應式縮放
+
     const calculateScale = () => {
       const vw = window.innerWidth;
-      if (vw < 480) {
-        setScale(0.5);
-      } else if (vw < 768) {
-        setScale(0.65);
-      } else if (vw < 1024) {
-        setScale(0.85);
-      } else {
-        setScale(1);
-      }
+      const vh = window.innerHeight;
+      // 拼圖區
+      const scaleByWidth = (vw * 0.95) / 1384;
+      const scaleByHeight = (vh * 0.88) / 600;
+      setScale(Math.min(scaleByWidth, scaleByHeight, 1));
+      // intro 對話框（800×800）
+      setIntroScale(Math.min((vw * 0.92) / 800, (vh * 0.92) / 800, 1));
     };
 
     calculateScale();
@@ -97,10 +91,12 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
 
   return (
     <div style={CONTAINER}>
+      {/* 半透明黑色遮罩 */}
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 0 }} />
       {isMounted && gameState !== 'win' && (
-        <button 
-          id="compass-back-btn" 
-          style={{ top: 'max(20px, 2vh)', left: 'max(20px, 2vw)' }} 
+        <button
+          id="compass-back-btn"
+          style={{ top: 'max(20px, 2vh)', left: 'max(20px, 2vw)', zIndex: 10 }}
           onClick={() => onSuccess(false)} 
           title="返回船艙"
           aria-label="返回"
@@ -109,56 +105,71 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
 
       {/* intro 對話框 */}
       {isMounted && gameState === 'intro' && (
-        <div id="dialogbox" style={{ display: 'flex', width: `calc(600px * ${scale})`, height: `calc(560px * ${scale})` }}>
-          <div id="dialog_content">
-            <h2 style={{ fontSize: `calc(28px * ${scale})` }}>迷航日誌</h2>
-            <p style={{ fontSize: `calc(18px * ${scale})` }}>航海日誌部分頁面被撕毀。</p>
-            <p style={{ fontSize: `calc(18px * ${scale})` }}>也許某幾頁記錄了關鍵的資訊……</p>
-            <p style={{ fontSize: `calc(18px * ${scale})` }}>試著把撕毀的頁面拼湊看看。</p>
-            <p style={{ fontSize: `calc(18px * ${scale})` }}>桌上散落著被撕毀的紙頁，將紙拼回去即可找到線索。</p>
+        <div style={{
+          width: `${Math.round(800 * introScale)}px`,
+          height: `${Math.round(800 * introScale)}px`,
+          flexShrink: 0,
+          position: 'relative',
+          zIndex: 1,
+        }}>
+          <div id="dialogbox" style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '800px',
+            height: '800px',
+            transform: `scale(${introScale})`,
+            transformOrigin: 'top left',
+          }}>
+            <div id="dialog_content">
+              <h2>迷航日誌</h2>
+              <p>航海日誌部分頁面被撕毀。</p>
+              <p>也許某幾頁記錄了關鍵的資訊……</p>
+              <p>試著把撕毀的頁面拼湊看看。</p>
+              <p>桌上散落著被撕毀的紙頁，將紙拼回去即可找到線索。</p>
+            </div>
+            <button id="startbutton" onClick={() => setGameState('playing')} aria-label="開始" />
           </div>
-          <button id="startbutton" onClick={() => setGameState('playing')} aria-label="開始" />
         </div>
       )}
 
       {/* win 畫面 */}
       {isMounted && gameState === 'win' && (
-        <>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 'clamp(8px, 2vh, 24px)',
+          width: '100%',
+          padding: `3vh ${window.innerWidth >= 768 ? 'clamp(2px, 28%, 420px)' : 'clamp(2px, 2%, 12px)'}`,
+          boxSizing: 'border-box',
+          zIndex: 2,
+        }}>
           <img
             src="/assets/diary/diaryAll.png"
             alt="完整日誌"
             style={{
-              position: 'absolute',
-              top: '4%',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: `clamp(200px, 46%, 560px)`,
-              maxHeight: '58vh',
+              width: `clamp(160px, 44vw, 560px)`,
+              maxHeight: '52vh',
               objectFit: 'contain',
               userSelect: 'none',
-              zIndex: 2,
             }}
           />
           <div style={{
-            position: 'absolute',
-            bottom: '3%',
-            left: '15%',
-            right: '15%',
-            maxHeight: '32vh',
-            overflow: 'hidden',
+            width: '100%',
             backgroundImage: "url('/assets/compass/StoryFrame.png')",
             backgroundSize: '100% 100%',
             backgroundRepeat: 'no-repeat',
-            padding: '2% 5%',
+            padding: 'clamp(8px, 2%, 20px) clamp(12px, 5%, 40px)',
             display: 'flex',
             flexDirection: 'column',
             gap: '6px',
-            zIndex: 3,
           }}>
             <p style={{
               color: '#fff',
-              fontSize: 'clamp(13px, 1.6vw, 18px)',
-              lineHeight: 1.75,
+              fontSize: 'clamp(11px, 2vw, 18px)',
+              lineHeight: 1.6,
               margin: 0,
               textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
             }}>
@@ -169,7 +180,7 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
               <p style={{
                 color: '#fff',
-                fontSize: 'clamp(13px, 1.8vw, 18px)',
+                fontSize: 'clamp(11px, 2.2vw, 18px)',
                 margin: 0,
                 textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
               }}>
@@ -178,12 +189,12 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
               <img
                 src="/assets/LockEndConBtn.png"
                 alt="確定"
-                style={{ 
-                  width: 'clamp(80px, 8vw, 110px)', 
-                  cursor: 'pointer', 
+                style={{
+                  width: 'clamp(48px, 8vw, 110px)',
+                  height: 'auto',
+                  cursor: 'pointer',
                   transition: 'transform 0.2s',
                   marginLeft: 'auto',
-                  minHeight: '44px',
                 }}
                 onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.08)')}
                 onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
@@ -192,108 +203,114 @@ export default function DiaryGame({ onSuccess }: DiaryGameProps) {
               />
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* playing 拼圖區 */}
       {isMounted && gameState === 'playing' && (
       <DndContext collisionDetection={pointerWithin} onDragEnd={handleDragEnd}>
-        <div style={{
-          display: 'flex',
-          flexDirection: window.innerWidth < 768 ? 'column' : 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: `calc(2rem * ${scale})`,
-          width: '95vw',
-          maxWidth: '1400px',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          padding: '20px 0',
-        }}>
-
-          {/* 左側：diary01 */}
-          <div style={{ 
-            width: window.innerWidth < 768 ? 'calc(220px * 2)' : `calc(440px * ${scale})`, 
-            flexShrink: 0, 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center' 
-          }}>
-            {!droppedItems.includes('diary01') ? (
-              <DraggableItem
-                id="diary01"
-                src="/assets/diary/diary01.png"
-                alt="diary piece 1"
-                style={{ width: '100%', height: 'auto' }}
-              />
-            ) : <div />}
-          </div>
-
-          {/* 中間：日誌底圖 + 放置區 */}
-          <div style={{ 
-            width: window.innerWidth < 768 ? 'calc(220px * 2)' : `calc(440px * ${scale})`, 
-            flexShrink: 0, 
-            position: 'relative' 
-          }}>
-            <img
-              src="/assets/diary/diary.png"
-              alt="diary"
-              style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}
-            />
-            {/* 放置區覆蓋整張底圖，各佔一個象限 */}
-            <DroppableHitbox id="target-diary01" style={{ top: '0%', left: '0%', width: '50%', height: '50%' }} />
-            <DroppableHitbox id="target-diary02" style={{ top: '0%', right: '0%', width: '50%', height: '50%' }} />
-            <DroppableHitbox id="target-diary03" style={{ bottom: '0%', left: '0%', width: '50%', height: '50%' }} />
-            {PIECES.map(piece =>
-              droppedItems.includes(piece.id) ? (
-                <img
-                  key={piece.id}
-                  src={piece.src}
-                  alt={piece.id}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'fill',
-                    pointerEvents: 'none',
-                    zIndex: 10,
-                  }}
-                />
-              ) : null
-            )}
-          </div>
-
-          {/* 右側：diary02 + diary03 */}
+        {window.innerWidth < 768 ? (
+          /* ── 手機：三欄，碎片在左右，底圖居中 ── */
           <div style={{
-            width: window.innerWidth < 768 ? '100%' : `calc(440px * ${scale})`,
-            flexShrink: 0,
             display: 'flex',
-            flexDirection: window.innerWidth < 768 ? 'row' : 'column',
-            gap: `calc(1.5rem * ${scale})`,
+            flexDirection: 'row',
             alignItems: 'center',
+            zIndex: 1,
             justifyContent: 'center',
+            width: '100vw',
+            padding: '48px 2px 8px',
+            boxSizing: 'border-box',
+            gap: '2px',
           }}>
-            {!droppedItems.includes('diary02') && (
-              <DraggableItem
-                id="diary02"
-                src="/assets/diary/diary02.png"
-                alt="diary piece 2"
-                style={{ width: window.innerWidth < 768 ? '45%' : '100%', height: 'auto' }}
-              />
-            )}
-            {!droppedItems.includes('diary03') && (
-              <DraggableItem
-                id="diary03"
-                src="/assets/diary/diary03.png"
-                alt="diary piece 3"
-                style={{ width: window.innerWidth < 768 ? '45%' : '100%', height: 'auto' }}
-              />
-            )}
-          </div>
+            {/* 左側碎片 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', width: '26vw', flexShrink: 0 }}>
+              {!droppedItems.includes('diary01') && (
+                <DraggableItem id="diary01" src="/assets/diary/diary01.png" alt="diary piece 1"
+                  style={{ width: '100%', height: 'auto' }} />
+              )}
+              {!droppedItems.includes('diary03') && (
+                <DraggableItem id="diary03" src="/assets/diary/diary03.png" alt="diary piece 3"
+                  style={{ width: '100%', height: 'auto' }} />
+              )}
+            </div>
 
-        </div>
+            {/* 中間底圖 */}
+            <div style={{ width: '46vw', flexShrink: 0, position: 'relative' }}>
+              <img
+                src="/assets/diary/diary.png"
+                alt="diary"
+                style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }}
+              />
+              <DroppableHitbox id="target-diary01" style={{ top: '0%', left: '0%', width: '50%', height: '50%' }} />
+              <DroppableHitbox id="target-diary02" style={{ top: '0%', right: '0%', width: '50%', height: '50%' }} />
+              <DroppableHitbox id="target-diary03" style={{ bottom: '0%', left: '0%', width: '50%', height: '50%' }} />
+              {PIECES.map(piece =>
+                droppedItems.includes(piece.id) ? (
+                  <img key={piece.id} src={piece.src} alt={piece.id} style={{
+                    position: 'absolute', top: 0, left: 0,
+                    width: '100%', height: '100%', objectFit: 'fill',
+                    pointerEvents: 'none', zIndex: 10,
+                  }} />
+                ) : null
+              )}
+            </div>
+
+            {/* 右側碎片 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', width: '26vw', flexShrink: 0 }}>
+              {!droppedItems.includes('diary02') && (
+                <DraggableItem id="diary02" src="/assets/diary/diary02.png" alt="diary piece 2"
+                  style={{ width: '100%', height: 'auto' }} />
+              )}
+            </div>
+          </div>
+        ) : (
+          /* ── 桌機：原本三欄橫排 ── */
+          <div style={{
+            width: `${Math.round(1384 * scale)}px`,
+            height: `${Math.round(620 * scale)}px`,
+            flexShrink: 0,
+            position: 'relative',
+            zIndex: 1,
+          }}>
+            <div style={{
+              position: 'absolute', top: 0, left: 0,
+              width: '1384px',
+              display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+              gap: '2rem',
+              transform: `scale(${scale})`, transformOrigin: 'top left',
+            }}>
+              <div style={{ width: '440px', flexShrink: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                {!droppedItems.includes('diary01') ? (
+                  <DraggableItem id="diary01" src="/assets/diary/diary01.png" alt="diary piece 1" style={{ width: '100%', height: 'auto' }} />
+                ) : <div />}
+              </div>
+              <div style={{ width: '440px', flexShrink: 0, position: 'relative' }}>
+                <img src="/assets/diary/diary.png" alt="diary"
+                  style={{ width: '100%', height: 'auto', display: 'block', userSelect: 'none' }} />
+                <DroppableHitbox id="target-diary01" style={{ top: '0%', left: '0%', width: '50%', height: '50%' }} />
+                <DroppableHitbox id="target-diary02" style={{ top: '0%', right: '0%', width: '50%', height: '50%' }} />
+                <DroppableHitbox id="target-diary03" style={{ bottom: '0%', left: '0%', width: '50%', height: '50%' }} />
+                {PIECES.map(piece =>
+                  droppedItems.includes(piece.id) ? (
+                    <img key={piece.id} src={piece.src} alt={piece.id} style={{
+                      position: 'absolute', top: 0, left: 0,
+                      width: '100%', height: '100%', objectFit: 'fill',
+                      pointerEvents: 'none', zIndex: 10,
+                    }} />
+                  ) : null
+                )}
+              </div>
+              <div style={{ width: '440px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center', justifyContent: 'center' }}>
+                {!droppedItems.includes('diary02') && (
+                  <DraggableItem id="diary02" src="/assets/diary/diary02.png" alt="diary piece 2" style={{ width: '100%', height: 'auto' }} />
+                )}
+                {!droppedItems.includes('diary03') && (
+                  <DraggableItem id="diary03" src="/assets/diary/diary03.png" alt="diary piece 3" style={{ width: '100%', height: 'auto' }} />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </DndContext>
       )}
 

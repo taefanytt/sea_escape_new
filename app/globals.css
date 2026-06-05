@@ -393,7 +393,7 @@ body, html {
     top: 45%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 55%;
+    width: 82%;
     color: #fff;
     text-align: center;
     z-index: 101;
@@ -499,8 +499,8 @@ body, html {
     position: absolute;
     top: max(20px, 2vh);
     left: max(20px, 2vw);
-    width: 65px;
-    height: 65px;
+    width: clamp(40px, 6vw, 65px);
+    height: clamp(40px, 6vw, 65px);
     background: url('/assets/compass/backbutton.png') no-repeat center/contain;
     border: none;
     cursor: pointer;
