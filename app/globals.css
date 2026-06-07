@@ -309,6 +309,11 @@ body, html {
     padding: 10px;
 }
 
+#level-overlay:has(#direction-container) {
+    padding: 0;
+    overflow: hidden;
+}
+
 #level-content {
     width: 90%;
     max-width: 900px;
@@ -708,9 +713,13 @@ body, html {
     overflow: hidden;
 }
 
-/* 當小於 ending1 狀態時的滿版設定 */
-#direction-container.ending1-bg {
-    background: #000 url('/assets/ending1.png') no-repeat center center / cover !important;
+/* 結局狀態滿版設定 */
+#direction-container.ending-bg {
+    background-size: cover !important;
+}
+
+#direction-container .ending-bg-image {
+    transform: scale(1.01);
 }
 
 #direction-container::before {
@@ -910,6 +919,12 @@ body, html {
 }
 #clue-toggle-btn:hover {
     transform: scale(1.05);
+}
+
+@media (min-width: 1025px) {
+    #clue-toggle-btn {
+        right: -35px;
+    }
 }
 
 /* 🎯 開始 / 重新開始按鈕（在對話框內，不單獨寫行內樣式） */

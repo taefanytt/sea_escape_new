@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import CompassGame from '@/components/CompassGame';
 import DiaryGame from '@/components/DiaryGame';
 import LetterGame from '@/components/LetterGame';
@@ -10,13 +10,67 @@ import EndGame from '@/components/EndGame';
 
 type LevelId = 'compass' | 'diary' | 'letter' | 'food' | 'lock' | 'end' | null;
 type PuzzleLevelId = Exclude<LevelId, 'end' | null>;
+type MusicTrack = 'background' | 'good-ending' | 'bad-ending';
 
 const REQUIRED_LEVELS: PuzzleLevelId[] = ['compass', 'diary', 'letter', 'food', 'lock'];
+const MUSIC_SRC: Record<MusicTrack, string> = {
+  background: '/assets/背景音樂.mp3',
+  'good-ending': '/assets/好結局音樂.mp3',
+  'bad-ending': '/assets/壞結局音樂.mp3',
+};
 
 export default function Home() {
   const [currentScene, setCurrentScene] = useState<'start' | 'intro' | 'main'>('start');
   const [activeLevel, setActiveLevel] = useState<LevelId>(null);
-  const [completedLevels, setCompletedLevels] = useState<PuzzleLevelId[]>([]);
+  const [, setCompletedLevels] = useState<PuzzleLevelId[]>([]);
+  const [musicTrack, setMusicTrack] = useState<MusicTrack>('background');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playTrack = useCallback((track: MusicTrack) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const nextSrc = MUSIC_SRC[track];
+    const shouldRestart = audio.src !== new URL(nextSrc, window.location.href).href;
+
+    if (shouldRestart) {
+      audio.pause();
+      audio.src = nextSrc;
+      audio.currentTime = 0;
+    }
+
+    audio.volume = 0.45;
+    audio.loop = track === 'background';
+    audio.play().catch(() => {
+      // Browsers wait for a user gesture before allowing audio. The next click will retry.
+    });
+  }, []);
+
+  useEffect(() => {
+    playTrack(musicTrack);
+  }, [musicTrack, playTrack]);
+
+  useEffect(() => {
+    const resumeMusic = () => playTrack(musicTrack);
+
+    window.addEventListener('pointerdown', resumeMusic);
+    window.addEventListener('keydown', resumeMusic);
+
+    return () => {
+      window.removeEventListener('pointerdown', resumeMusic);
+      window.removeEventListener('keydown', resumeMusic);
+    };
+  }, [musicTrack, playTrack]);
+
+  const startGame = () => {
+    setMusicTrack('background');
+    setCurrentScene('intro');
+    playTrack('background');
+  };
+
+  const handleEndingResult = useCallback((result: 'good' | 'bad') => {
+    setMusicTrack(result === 'good' ? 'good-ending' : 'bad-ending');
+  }, []);
 
   const handleLevelClose = (level: PuzzleLevelId, completed?: boolean) => {
     if (!completed) {
@@ -35,18 +89,20 @@ export default function Home() {
 
   return (
     <main className="game-container">
+      <audio ref={audioRef} src={MUSIC_SRC[musicTrack]} loop preload="auto" />
+
       {currentScene === 'start' && (
         <section id="scene-start" className="scene" style={{ display: 'block' }}>
           <div 
             id="hitbox-start" 
             className="hitbox" 
             title="開始遊戲" 
-            onClick={() => setCurrentScene('intro')} 
+            onClick={startGame} 
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                setCurrentScene('intro');
+                startGame();
               }
             }}
           />
@@ -161,10 +217,11 @@ export default function Home() {
           {activeLevel === 'end' && (
             <EndGame onSuccess={() => {
               // reset game after ending: clear progress and return to main scene
+              setMusicTrack('background');
               setCompletedLevels([]);
               setActiveLevel(null);
               setCurrentScene('start');
-            }} />
+            }} onEndingResult={handleEndingResult} />
           )}
         </div>
       )}

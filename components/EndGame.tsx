@@ -4,11 +4,12 @@ import Image from 'next/image';
 
 interface EndGameProps {
   onSuccess: () => void;
+  onEndingResult?: (result: 'good' | 'bad') => void;
 }
 
 type GameStage = 'intro' | 'playing' | 'ending' | 'fail';
 
-export default function EndGame({ onSuccess }: EndGameProps) {
+export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
   const [stage, setStage] = useState<GameStage>('intro');
   const [playerInput, setPlayerInput] = useState<string[]>([]);
   const [showClueModal, setShowClueModal] = useState<boolean>(false);
@@ -36,6 +37,16 @@ export default function EndGame({ onSuccess }: EndGameProps) {
     window.addEventListener('resize', calculateScale);
     return () => window.removeEventListener('resize', calculateScale);
   }, []);
+
+  useEffect(() => {
+    if (stage === 'ending') {
+      onEndingResult?.('good');
+    }
+
+    if (stage === 'fail') {
+      onEndingResult?.('bad');
+    }
+  }, [onEndingResult, stage]);
 
   const handleDirClick = (dir: string) => {
     if (stage !== 'playing' || locked) return;
@@ -88,10 +99,11 @@ export default function EndGame({ onSuccess }: EndGameProps) {
   return (
     <div 
       id="direction-container" 
-      className={stage === 'ending' ? 'ending1-bg' : ''}
+      className={stage === 'ending' || stage === 'fail' ? 'ending-bg' : ''}
       style={{ '--scale': scale } as React.CSSProperties} /* 💡 把縮放因子傳給 CSS */
     >
       <Image
+        className={stage === 'ending' || stage === 'fail' ? 'ending-bg-image' : ''}
         src={getBackgroundImageSrc()}
         alt="遊戲背景"
         fill
