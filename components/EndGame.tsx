@@ -208,39 +208,55 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
             <div id="dir-center-compass"></div>
 
             {/* 方位配置（反過來）：上為南，下為北，左為東，右為西 */}
+            {/* ⬆️ 畫面上的按鈕 -> 對應 南 (S) */}
             <button 
               className={`dir-arrow btn-up ${errorBtn === 'S' ? 'shake-error' : ''}`} 
-              onClick={() => handleDirClick('S')} 
+              onClick={(e) => {
+                // 💡 桌機點擊時正常執行
+                handleDirClick('S');
+              }} 
               aria-label="南 (上方)"
               onTouchStart={(e) => {
-                e.preventDefault();
+                e.preventDefault(); // 💡 關鍵：強制阻斷後續的 onClick，防止手機版重複判定！
                 handleDirClick('S');
               }}
             />
+
+            {/* ⬇️ 畫面下的按鈕 -> 對應 北 (N) */}
             <button 
               className={`dir-arrow btn-down ${errorBtn === 'N' ? 'shake-error' : ''}`} 
-              onClick={() => handleDirClick('N')} 
+              onClick={(e) => {
+                handleDirClick('N');
+              }} 
               aria-label="北 (下方)"
               onTouchStart={(e) => {
-                e.preventDefault();
+                e.preventDefault(); // 💡 關鍵：強制阻斷後續的 onClick
                 handleDirClick('N');
               }}
             />
+
+            {/* ⬅️ 畫面左的按鈕 -> 對應 東 (E) */}
             <button 
               className={`dir-arrow btn-left ${errorBtn === 'E' ? 'shake-error' : ''}`} 
-              onClick={() => handleDirClick('E')} 
+              onClick={(e) => {
+                handleDirClick('E');
+              }} 
               aria-label="東 (左方)"
               onTouchStart={(e) => {
-                e.preventDefault();
+                e.preventDefault(); // 💡 關鍵：強制阻斷後續的 onClick
                 handleDirClick('E');
               }}
             />
+
+            {/* ➡️ 畫面右的按鈕 -> 對應 西 (W) */}
             <button 
               className={`dir-arrow btn-right ${errorBtn === 'W' ? 'shake-error' : ''}`} 
-              onClick={() => handleDirClick('W')} 
-              aria-label="西 (右方)"
+              onClick={(e) => {
+                handleDirClick('W');
+              }} 
+              aria-label="西 (畫面右方)"
               onTouchStart={(e) => {
-                e.preventDefault();
+                e.preventDefault(); // 💡 關鍵：強制阻斷後續的 onClick
                 handleDirClick('W');
               }}
             />
