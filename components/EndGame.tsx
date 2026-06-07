@@ -108,7 +108,7 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
         alt="遊戲背景"
         fill
         priority
-        quality={100}
+        quality={75}
         style={{
           objectFit: 'cover',
           objectPosition: 'center',
