@@ -384,13 +384,23 @@ body, html {
     transform-origin: center center;
 }
 
-/* 遊戲勝利時的線索對話框 */
-#dialogbox.compass-clue-dialogbox {
+/* ========================================== 
+   🎯 修正後：遊戲勝利時的線索對話框
+   ========================================== */
+   #dialogbox.compass-clue-dialogbox {
     width: 820px;
     height: 240px;
     background: url('/assets/LockEndTextArea.png') no-repeat center center/contain;
+    
+    /* 💡 修正 1：把 top 從 70% 移到 50%（或者靠 React style 來控管），
+       如果一定要在 70% 的位置，建議維持原本對話框的置中位置。 */
     top: 70%; 
-    transform: translate(-50%, -50%) scale(var(--scale, 1));
+    
+    /* 💡 修正 2：徹底移除這裡的 transform 屬性！
+       不要在 CSS 裡硬寫 transform，我們要讓它完美吃 React 傳過來的 scale */
+    
+    /* 💡 修正 3：確保縮放的中心點永遠在正中央 */
+    transform-origin: center center !important;
 }
 
 #dialog_content {

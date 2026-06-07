@@ -328,10 +328,10 @@ export default function CompassGame({ onSuccess }: CompassGameProps) {
 
       {/* 💡 已完全移除內聯 style 屬性，交給 CSS className 來控管置中與縮放 */}
       {dialogVisible && (gameState === 'intro' || gameState === 'calibrating' || gameState === 'win') && (
-        <div
-          id="dialogbox"
-          className={gameState === 'win' ? 'compass-clue-dialogbox' : undefined}
-        >
+          <div
+            id="dialogbox"
+            className={gameState === 'win' ? 'compass-clue-dialogbox' : undefined}
+          >
           <div id="dialog_content">
             {dialogText.title && <h2>{dialogText.title}</h2>}
             <p>{dialogText.p1}</p>

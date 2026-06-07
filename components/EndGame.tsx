@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 
 interface EndGameProps {
@@ -20,10 +20,14 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
   // 💡 響應式縮放因子
   const [scale, setScale] = useState(1);
 
-  const correctSequence = ['N', 'W', 'W', 'W', 'E'];
-  const badSequence = ['N', 'W', 'W', 'W', 'E', 'E', 'E'];
+  // 💡 用來管理「好結局延遲判定」的計時器，防止好結局把壞結局攔截
+  const goodEndingTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // 💡 監聽螢幕寬度來動態更新縮放因子（與羅盤關完全一致）
+  // 💡 方位配置（反過來）：N在下、W在右、E在左、S在上
+  const correctSequence = ['N', 'W', 'W', 'W', 'E'];                // 好結局 (5步)
+  const badSequence     = ['N', 'W', 'W', 'W', 'E', 'E', 'E'];       // 壞結局 (好結局路線完，再多點兩次東，共7步)
+
+  // 監聽螢幕寬度
   useEffect(() => {
     const calculateScale = () => {
       const vw = window.innerWidth;
@@ -38,24 +42,44 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
     return () => window.removeEventListener('resize', calculateScale);
   }, []);
 
+  // 結局結果通知
   useEffect(() => {
     if (stage === 'ending') {
       onEndingResult?.('good');
     }
-
     if (stage === 'fail') {
       onEndingResult?.('bad');
     }
   }, [onEndingResult, stage]);
 
+  // 重置遊戲
+  const handleResetGame = () => {
+    if (goodEndingTimer.current) clearTimeout(goodEndingTimer.current);
+    setPlayerInput([]);
+    setErrorCount(0);
+    setLocked(false);
+    setErrorBtn(null);
+    onSuccess();
+  };
+
   const handleDirClick = (dir: string) => {
     if (stage !== 'playing' || locked) return;
 
-    const nextInput = [...playerInput, dir];
-    const isBadPrefix = nextInput.every((val, idx) => val === badSequence[idx]);
-    const isCorrectPrefix = nextInput.every((val, idx) => val === correctSequence[idx]);
+    // 💡 只要玩家點擊了任何按鈕，立刻清除前一次留下的好結局計時器（代表他還想繼續點！）
+    if (goodEndingTimer.current) {
+      clearTimeout(goodEndingTimer.current);
+      goodEndingTimer.current = null;
+    }
 
-    if (!isBadPrefix && !isCorrectPrefix) {
+    const nextInput = [...playerInput, dir];
+    const currentStr = nextInput.join('');
+    const correctStr = correctSequence.join('');
+    const badStr = badSequence.join('');
+
+    // 檢查目前輸入是否符合好結局或壞結局的前綴
+    const isValidPath = correctStr.startsWith(currentStr) || badStr.startsWith(currentStr);
+
+    if (!isValidPath) {
       const nextErrorCount = errorCount + 1;
       setErrorCount(nextErrorCount);
       setPlayerInput([]);
@@ -72,21 +96,22 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
 
     setPlayerInput(nextInput);
 
-    if (isBadPrefix && nextInput.length === badSequence.length) {
-      setLocked(true);
-      setTimeout(() => setStage('fail'), 300);
+    // 🎯 判定 A：達到好結局條件（點滿 5 步且完全正確）
+    if (currentStr === correctStr) {
+      // 💡 關鍵：不立刻進結局！在背景設定一個 1000 毫秒（1秒）的定時器
+      // 如果玩家手停下來 1 秒鐘都沒有再點擊，就代表他要好結局！
+      goodEndingTimer.current = setTimeout(() => {
+        setLocked(true);
+        setStage('ending');
+      }, 1000); 
       return;
     }
 
-    if (isCorrectPrefix && nextInput.length === correctSequence.length) {
-      setTimeout(() => {
-        setLocked((prev) => {
-          if (!prev) {
-            setStage('ending');
-          }
-          return true;
-        });
-      }, 800);
+    // 🎯 判定 B：達到壞結局條件（點滿 7 步且完全正確）
+    if (currentStr === badStr) {
+      setLocked(true);
+      setTimeout(() => setStage('fail'), 500);
+      return;
     }
   };
 
@@ -100,10 +125,9 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
     <div 
       id="direction-container" 
       className={stage === 'ending' || stage === 'fail' ? 'ending-bg' : ''}
-      style={{ '--scale': scale } as React.CSSProperties} /* 💡 把縮放因子傳給 CSS */
+      style={{ '--scale': scale } as React.CSSProperties}
     >
       <Image
-        className={stage === 'ending' || stage === 'fail' ? 'ending-bg-image' : ''}
         src={getBackgroundImageSrc()}
         alt="遊戲背景"
         fill
@@ -116,7 +140,7 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
         }}
       />
 
-      {/* 💡 恢復乾淨結構：直接在層級下控制 stage 狀態 */}
+      {/* 對話框框階段 */}
       {(stage === 'intro' || stage === 'ending' || stage === 'fail') && (
         <div id="dialogbox">
           <div id="dialog_content">
@@ -164,78 +188,82 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
             <button 
               id="endgame-playagain-btn" 
               type="button" 
-              onClick={onSuccess} 
+              onClick={handleResetGame} 
               aria-label="重新開始"
             />
           )}
         </div>
       )}
 
+
       {stage === 'playing' && (
-        <div id="dir-game-stage">
-          <button 
-            id="clue-toggle-btn" 
-            onClick={() => setShowClueModal(true)} 
-            aria-label="查看線索" 
-          />
+        <div id="dir-stage-wrapper">
+          <div id="dir-game-stage">
+            <button 
+              id="clue-toggle-btn" 
+              onClick={() => setShowClueModal(true)} 
+              aria-label="查看線索" 
+            />
 
-          <div id="dir-center-compass"></div>
+            <div id="dir-center-compass"></div>
 
-          <button 
-            className={`dir-arrow btn-up ${errorBtn === 'S' ? 'shake-error' : ''}`} 
-            onClick={() => handleDirClick('S')} 
-            aria-label="南"
-            onTouchStart={(e) => {
-              e.preventDefault();
-              handleDirClick('S');
-            }}
-          />
-          <button 
-            className={`dir-arrow btn-left ${errorBtn === 'E' ? 'shake-error' : ''}`} 
-            onClick={() => handleDirClick('E')} 
-            aria-label="東"
-            onTouchStart={(e) => {
-              e.preventDefault();
-              handleDirClick('E');
-            }}
-          />
-          <button 
-            className={`dir-arrow btn-right ${errorBtn === 'W' ? 'shake-error' : ''}`} 
-            onClick={() => handleDirClick('W')} 
-            aria-label="西"
-            onTouchStart={(e) => {
-              e.preventDefault();
-              handleDirClick('W');
-            }}
-          />
-          <button 
-            className={`dir-arrow btn-down ${errorBtn === 'N' ? 'shake-error' : ''}`} 
-            onClick={() => handleDirClick('N')} 
-            aria-label="北"
-            onTouchStart={(e) => {
-              e.preventDefault();
-              handleDirClick('N');
-            }}
-          />
+            {/* 方位配置（反過來）：上為南，下為北，左為東，右為西 */}
+            <button 
+              className={`dir-arrow btn-up ${errorBtn === 'S' ? 'shake-error' : ''}`} 
+              onClick={() => handleDirClick('S')} 
+              aria-label="南 (上方)"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleDirClick('S');
+              }}
+            />
+            <button 
+              className={`dir-arrow btn-down ${errorBtn === 'N' ? 'shake-error' : ''}`} 
+              onClick={() => handleDirClick('N')} 
+              aria-label="北 (下方)"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleDirClick('N');
+              }}
+            />
+            <button 
+              className={`dir-arrow btn-left ${errorBtn === 'E' ? 'shake-error' : ''}`} 
+              onClick={() => handleDirClick('E')} 
+              aria-label="東 (左方)"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleDirClick('E');
+              }}
+            />
+            <button 
+              className={`dir-arrow btn-right ${errorBtn === 'W' ? 'shake-error' : ''}`} 
+              onClick={() => handleDirClick('W')} 
+              aria-label="西 (右方)"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleDirClick('W');
+              }}
+            />
 
-          {showClueModal && (
-            <div id="clue-modal">
-              <div className="clue-modal-box">
-                <p>西 (W) 3</p>
-                <hr />
-                <p>北 (N) 1</p>
-                <hr />
-                <p>東 (E) 1</p>
-                <hr />
-                <p>順序「北 → 西 → 東」</p>
-                <hr />
-                <p>東 (E) 3</p>
-                <button id="clue-close-btn" onClick={() => setShowClueModal(false)}>
-                  確定
-                </button>
+            {showClueModal && (
+              <div id="clue-modal">
+                <div className="clue-modal-box">
+                  <p>西 (W) 3</p>
+                  <hr />
+                  <p>北 (N) 1</p>
+                  <hr />
+                  <p>東 (E) 1</p>
+                  <hr />
+                  <p style={{ color: '#d8a85f', fontWeight: 'bold' }}>順序「北 → 西 → 東」</p>
+                  <hr />
+                  <p>🧭 提示：若想通往別的結局，最後一步或許有其他轉機...</p>
+                  <button id="clue-close-btn" onClick={() => setShowClueModal(false)}>
+                    確定
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>
