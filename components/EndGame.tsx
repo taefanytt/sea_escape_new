@@ -20,12 +20,15 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
   // 💡 響應式縮放因子
   const [scale, setScale] = useState(1);
 
-  // 💡 用來管理「好結局延遲判定」的計時器，防止好結局把壞結局攔截
+  // 💡 用來管理「好結局延遲判定」的計時器
   const goodEndingTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  // 💡 關鍵防禦：防連點與防多重觸控鎖（300毫秒內禁止重複觸發，徹底根除一戳雙發的 Bug）
+  const clickLock = useRef<boolean>(false);
 
   // 💡 方位配置（反過來）：N在下、W在右、E在左、S在上
   const correctSequence = ['N', 'W', 'W', 'W', 'E'];                // 好結局 (5步)
-  const badSequence     = ['N', 'W', 'W', 'W', 'E', 'E', 'E'];       // 壞結局 (好結局路線完，再多點兩次東，共7步)
+  const badSequence     = ['N', 'W', 'W', 'W', 'E', 'E', 'E'];       // 壞結局
 
   // 監聽螢幕寬度
   useEffect(() => {
@@ -44,12 +47,8 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
 
   // 結局結果通知
   useEffect(() => {
-    if (stage === 'ending') {
-      onEndingResult?.('good');
-    }
-    if (stage === 'fail') {
-      onEndingResult?.('bad');
-    }
+    if (stage === 'ending') onEndingResult?.('good');
+    if (stage === 'fail') onEndingResult?.('bad');
   }, [onEndingResult, stage]);
 
   // 重置遊戲
@@ -59,13 +58,17 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
     setErrorCount(0);
     setLocked(false);
     setErrorBtn(null);
+    clickLock.current = false;
     onSuccess();
   };
 
   const handleDirClick = (dir: string) => {
-    if (stage !== 'playing' || locked) return;
+    if (stage !== 'playing' || locked || clickLock.current) return;
 
-    // 💡 只要玩家點擊了任何按鈕，立刻清除前一次留下的好結局計時器（代表他還想繼續點！）
+    // 💡 啟動防禦鎖：300ms 內不管大拇指怎麼滑、戳到幾個按鈕，通通只算這第一個！
+    clickLock.current = true;
+    setTimeout(() => { clickLock.current = false; }, 300);
+
     if (goodEndingTimer.current) {
       clearTimeout(goodEndingTimer.current);
       goodEndingTimer.current = null;
@@ -76,42 +79,37 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
     const correctStr = correctSequence.join('');
     const badStr = badSequence.join('');
 
-    // 檢查目前輸入是否符合好結局或壞結局的前綴
     const isValidPath = correctStr.startsWith(currentStr) || badStr.startsWith(currentStr);
 
     if (!isValidPath) {
       const nextErrorCount = errorCount + 1;
       setErrorCount(nextErrorCount);
-      setPlayerInput([]);
+      setPlayerInput([]); // 按錯就歸零
+
+      setErrorBtn(dir);
+      setTimeout(() => setErrorBtn(null), 300);
 
       if (nextErrorCount >= 5) {
         setLocked(true);
         setTimeout(() => setStage('fail'), 300);
-      } else {
-        setErrorBtn(dir);
-        setTimeout(() => setErrorBtn(null), 300);
       }
       return;
     }
 
     setPlayerInput(nextInput);
 
-    // 🎯 判定 A：達到好結局條件（點滿 5 步且完全正確）
+    // 🎯 判定 A：達到好結局條件
     if (currentStr === correctStr) {
-      // 💡 關鍵：不立刻進結局！在背景設定一個 1000 毫秒（1秒）的定時器
-      // 如果玩家手停下來 1 秒鐘都沒有再點擊，就代表他要好結局！
       goodEndingTimer.current = setTimeout(() => {
         setLocked(true);
         setStage('ending');
       }, 1000); 
-      return;
     }
 
-    // 🎯 判定 B：達到壞結局條件（點滿 7 步且完全正確）
+    // 🎯 判定 B：達到壞結局條件
     if (currentStr === badStr) {
       setLocked(true);
       setTimeout(() => setStage('fail'), 500);
-      return;
     }
   };
 
@@ -133,11 +131,7 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
         fill
         priority
         quality={75}
-        style={{
-          objectFit: 'cover',
-          objectPosition: 'center',
-          zIndex: 0,
-        }}
+        style={{ objectFit: 'cover', objectPosition: 'center', zIndex: 0 }}
       />
 
       {/* 對話框框階段 */}
@@ -155,7 +149,6 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
                 </p>
               </>
             )}
-
             {stage === 'ending' && (
               <>
                 <p>船舵發出沉重的喀噠聲——</p>
@@ -166,7 +159,6 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
                 <p>船長沒有回來。但一切再次恢復平靜。</p>
               </>
             )}
-
             {stage === 'fail' && (
               <>
                 <p>船舵在連續的錯誤指令下劇烈反彈——</p>
@@ -179,86 +171,46 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
           </div>
 
           {stage === 'intro' ? (
-            <button 
-              id="startbutton" 
-              onClick={() => setStage('playing')} 
-              aria-label="開始"
-            />
+            <button id="startbutton" onClick={() => setStage('playing')} aria-label="開始" />
           ) : (
-            <button 
-              id="endgame-playagain-btn" 
-              type="button" 
-              onClick={handleResetGame} 
-              aria-label="重新開始"
-            />
+            <button id="endgame-playagain-btn" type="button" onClick={handleResetGame} aria-label="重新開始" />
           )}
         </div>
       )}
 
-
       {stage === 'playing' && (
         <div id="dir-stage-wrapper">
           <div id="dir-game-stage">
-            <button 
-              id="clue-toggle-btn" 
-              onClick={() => setShowClueModal(true)} 
-              aria-label="查看線索" 
-            />
-
+            <button id="clue-toggle-btn" onClick={() => setShowClueModal(true)} aria-label="查看線索" />
             <div id="dir-center-compass"></div>
 
-            {/* 方位配置（反過來）：上為南，下為北，左為東，右為西 */}
-            {/* ⬆️ 畫面上的按鈕 -> 對應 南 (S) */}
+            {/* 💡 修正後的方向按鈕：全面支援 clickLock 物理阻斷 */}
             <button 
               className={`dir-arrow btn-up ${errorBtn === 'S' ? 'shake-error' : ''}`} 
-              onClick={(e) => {
-                // 💡 桌機點擊時正常執行
-                handleDirClick('S');
-              }} 
+              onClick={(e) => { e.preventDefault(); handleDirClick('S'); }} 
               aria-label="南 (上方)"
-              onTouchStart={(e) => {
-                e.preventDefault(); // 💡 關鍵：強制阻斷後續的 onClick，防止手機版重複判定！
-                handleDirClick('S');
-              }}
+              onTouchStart={(e) => { e.preventDefault(); handleDirClick('S'); }}
             />
 
-            {/* ⬇️ 畫面下的按鈕 -> 對應 北 (N) */}
             <button 
               className={`dir-arrow btn-down ${errorBtn === 'N' ? 'shake-error' : ''}`} 
-              onClick={(e) => {
-                handleDirClick('N');
-              }} 
+              onClick={(e) => { e.preventDefault(); handleDirClick('N'); }} 
               aria-label="北 (下方)"
-              onTouchStart={(e) => {
-                e.preventDefault(); // 💡 關鍵：強制阻斷後續的 onClick
-                handleDirClick('N');
-              }}
+              onTouchStart={(e) => { e.preventDefault(); handleDirClick('N'); }}
             />
 
-            {/* ⬅️ 畫面左的按鈕 -> 對應 東 (E) */}
             <button 
               className={`dir-arrow btn-left ${errorBtn === 'E' ? 'shake-error' : ''}`} 
-              onClick={(e) => {
-                handleDirClick('E');
-              }} 
+              onClick={(e) => { e.preventDefault(); handleDirClick('E'); }} 
               aria-label="東 (左方)"
-              onTouchStart={(e) => {
-                e.preventDefault(); // 💡 關鍵：強制阻斷後續的 onClick
-                handleDirClick('E');
-              }}
+              onTouchStart={(e) => { e.preventDefault(); handleDirClick('E'); }}
             />
 
-            {/* ➡️ 畫面右的按鈕 -> 對應 西 (W) */}
             <button 
               className={`dir-arrow btn-right ${errorBtn === 'W' ? 'shake-error' : ''}`} 
-              onClick={(e) => {
-                handleDirClick('W');
-              }} 
+              onClick={(e) => { e.preventDefault(); handleDirClick('W'); }} 
               aria-label="西 (畫面右方)"
-              onTouchStart={(e) => {
-                e.preventDefault(); // 💡 關鍵：強制阻斷後續的 onClick
-                handleDirClick('W');
-              }}
+              onTouchStart={(e) => { e.preventDefault(); handleDirClick('W'); }}
             />
 
             {showClueModal && (
@@ -273,9 +225,7 @@ export default function EndGame({ onSuccess, onEndingResult }: EndGameProps) {
                   <p style={{ color: '#d8a85f', fontWeight: 'bold' }}>順序「北 → 西 → 東」</p>
                   <hr />
                   <p>🧭 提示：若想通往別的結局，最後一步或許有其他轉機...</p>
-                  <button id="clue-close-btn" onClick={() => setShowClueModal(false)}>
-                    確定
-                  </button>
+                  <button id="clue-close-btn" onClick={() => setShowClueModal(false)}>確定</button>
                 </div>
               </div>
             )}
