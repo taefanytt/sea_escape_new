@@ -31,13 +31,13 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
       </div>
       <style>
             .letter-game-box {
-              position: relative; /* 讓真實返回按鈕可以相對於這個大框框做絕對定位 */
+              position: relative; 
               width: 100%;
               height: 100%;
               display: flex;
               justify-content: center;
               align-items: center;
-              background: #111; /* 保持精美置中時的黑底沉浸感 */
+              background: #111; 
               border-radius: 0;
               padding: 0;
               box-sizing: border-box;
@@ -50,16 +50,16 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
               left: 20px;
               width: 50px;
               height: 50px;
-              background: transparent;  /* 移除背景色 */
+              background: transparent;  
               border: none;
-              border-radius: 0;         /* 移除圓角 */
+              border-radius: 0;         
               padding: 0;
               cursor: pointer;
               z-index: 100;
               display: flex;
               justify-content: center;
               align-items: center;
-              box-shadow: none;         /* 移除陰影 */
+              box-shadow: none;         
               transition: transform 0.1s;
             }
             .real-back-btn:hover {
@@ -68,6 +68,7 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
             .real-back-btn:active {
               transform: scale(0.95);
             }
+
             .stage-wrapper {
               position: relative;
               display: flex;
@@ -135,14 +136,13 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
 
     const gameStage = container.querySelector<HTMLImageElement>('#game-stage');
     const dragCandle = container.querySelector<HTMLImageElement>('#drag-candle');
-    const realBackButton = container.querySelector<HTMLButtonElement>('#real-back-button'); // 🌟 抓取新按鈕
+    const realBackButton = container.querySelector<HTMLButtonElement>('#real-back-button'); 
     const hotspotStart = container.querySelector<HTMLDivElement>('#hotspot-start');
     const hotspotLetter = container.querySelector<HTMLDivElement>('#hotspot-letter-target');
     const hotspotNext = container.querySelector<HTMLDivElement>('#hotspot-click-next');
     const hotspotWin = container.querySelector<HTMLDivElement>('#hotspot-win');
 
     let currentStep = 1;
-
     const cleanupFns: Array<() => void> = [];
 
     const register = <T extends EventTarget>(
@@ -155,35 +155,42 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
       cleanupFns.push(() => element.removeEventListener(type, listener));
     };
 
-    // 🌟 更改處：將點擊監聽改綁在「真實實體按鈕」上，並對齊你的返回與隱藏邏輯
+    // 🌟 共享的「成功烤信通關」切換邏輯
+    const triggerLetterSuccess = () => {
+      currentStep = 3;
+      if (dragCandle) dragCandle.style.display = 'none';
+      if (hotspotLetter) hotspotLetter.style.display = 'none';
+      if (gameStage) gameStage.src = '/assets/letter_2-2.png';
+      if (realBackButton) realBackButton.style.display = 'block';
+      if (hotspotNext) hotspotNext.style.display = 'block';
+    };
+
     register(realBackButton, 'click', (e: Event) => {
       if (e) e.stopPropagation(); 
       
       if (currentStep === 1) {
-        // 步驟 1 點返回：直接退出關卡
         onSuccess(false);
       } 
       else if (currentStep === 2) {
-        // 🌟 依據鎖扣邏輯：步驟 2 (letter_2-1) 點返回：回到步驟 1 (letter_1)
         currentStep = 1;
         if (gameStage) gameStage.src = '/assets/letter_1.png';
         if (hotspotStart) hotspotStart.style.display = 'block';
         if (dragCandle) dragCandle.style.display = 'none';
         if (hotspotLetter) hotspotLetter.style.display = 'none';
-        if (realBackButton) realBackButton.style.display = 'block'; // 確保返回按鈕在
+        if (realBackButton) realBackButton.style.display = 'block'; 
       }
       else if (currentStep === 3) {
-        // 步驟 3 (letter_2-2) 點返回：回到步驟 2 (letter_2-1 重新烤信)
         currentStep = 2;
         if (gameStage) gameStage.src = '/assets/letter_2-1.png';
         if (hotspotNext) hotspotNext.style.display = 'none';
-        
-        // 🌟 依據新邏輯：在步驟 2 時返回鈕依然要開著，讓玩家可以一路退回第一頁說明
         if (realBackButton) realBackButton.style.display = 'block'; 
         
         if (dragCandle) {
           dragCandle.style.display = 'block';
           dragCandle.style.visibility = 'visible';
+          // ✅【修改處 2】返回 step2 時重置蠟燭位置，避免觸控拖動後位置殘留
+          dragCandle.style.top = '52%';
+          dragCandle.style.left = '72%';
         }
         if (hotspotLetter) hotspotLetter.style.display = 'block';
       }
@@ -195,11 +202,10 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
       if (gameStage) gameStage.src = '/assets/letter_2-1.png';
       if (dragCandle) dragCandle.style.display = 'block';
       if (hotspotLetter) hotspotLetter.style.display = 'block';
-      
-      // 🌟 進入步驟 2，返回鈕維持 block 不隱藏
       if (realBackButton) realBackButton.style.display = 'block';
     });
 
+    // 電腦版滑鼠拖曳防殘影
     if (dragCandle) {
       dragCandle.ondragstart = () => {
         setTimeout(() => {
@@ -215,30 +221,62 @@ export default function LetterGame({ onSuccess }: LetterGameProps) {
           dragCandle.ondragend = null;
         }
       });
+
+      // ✅【修改處 1】新增手機觸控拖曳支援
+      const onTouchMove = (e: TouchEvent) => {
+        if (currentStep !== 2) return;
+        e.preventDefault(); // 防止頁面捲動干擾拖曳
+        const touch = e.touches[0];
+        const rect = container.getBoundingClientRect();
+        const x = ((touch.clientX - rect.left) / rect.width) * 100;
+        const y = ((touch.clientY - rect.top) / rect.height) * 100;
+        dragCandle.style.left = `${x - 4}%`; // -4% 讓蠟燭中心對齊手指
+        dragCandle.style.top  = `${y - 6}%`; // -6% 讓蠟燭中心對齊手指
+      };
+
+      const onTouchEnd = (e: TouchEvent) => {
+        if (currentStep !== 2) return;
+        const touch = e.changedTouches[0];
+        const hotRect = hotspotLetter!.getBoundingClientRect();
+        // 判斷手指放開時是否落在信件熱區內
+        if (
+          touch.clientX >= hotRect.left && touch.clientX <= hotRect.right &&
+          touch.clientY >= hotRect.top  && touch.clientY <= hotRect.bottom
+        ) {
+          triggerLetterSuccess();
+        }
+      };
+
+      dragCandle.addEventListener('touchmove', onTouchMove, { passive: false });
+      dragCandle.addEventListener('touchend', onTouchEnd);
+      cleanupFns.push(() => {
+        dragCandle.removeEventListener('touchmove', onTouchMove);
+        dragCandle.removeEventListener('touchend', onTouchEnd);
+      });
     }
 
     if (hotspotLetter) {
+      // 1. 電腦端拖曳接收
       register(hotspotLetter, 'dragover', (event) => {
         event.preventDefault();
       });
       register(hotspotLetter, 'drop', (event) => {
         event.preventDefault();
-        currentStep = 3;
-        if (dragCandle) dragCandle.style.display = 'none';
-        if (hotspotLetter) hotspotLetter.style.display = 'none';
-        if (gameStage) gameStage.src = '/assets/letter_2-2.png';
-        if (realBackButton) realBackButton.style.display = 'block';
-        if (hotspotNext) hotspotNext.style.display = 'block';
+        triggerLetterSuccess();
+      });
+
+      // 🌟【關鍵解決方案】手機端觸控防卡死：手機無法拖曳，直接用「點擊信件」來燒信通關！
+      register(hotspotLetter, 'click', () => {
+        if (currentStep === 2) {
+          triggerLetterSuccess();
+        }
       });
     }
 
     register(hotspotNext, 'click', () => {
       currentStep = 4;
       if (hotspotNext) hotspotNext.style.display = 'none';
-      
-      // 最後一頁線索頁，為了防呆與強制玩家通關，隱藏左上角返回按鈕
       if (realBackButton) realBackButton.style.display = 'none'; 
-      
       if (gameStage) gameStage.src = '/assets/letter_3.png';
       if (hotspotWin) hotspotWin.style.display = 'block';
     });
