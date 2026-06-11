@@ -196,14 +196,15 @@ export default function Home() {
               }}
             />
           </div>
-          {/* 開發用：直接前往 EndGame（方便測試） */}
+
+          {/* 開發用：直接前往 EndGame（方便測試） 
           <button 
             id="dev-end-btn" 
             style={{ position: 'fixed', bottom: 20, left: 20, zIndex: 999 }} 
             onClick={() => setActiveLevel('end')}
           >
             DEV: End
-          </button>
+          </button> */}
         </section>
       )}
 
